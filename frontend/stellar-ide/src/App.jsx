@@ -1,35 +1,64 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState, useEffect } from 'react';
+import { EditorProvider } from './contexts/EditorContext';
+import { FileSystemProvider } from './contexts/FileSystemContext';
+import { BlockchainProvider } from './contexts/BlockchainContext';
+import { ThemeProvider } from './contexts/ThemeContext';
+import Header from './components/layout/Header';
+import Sidebar from './components/layout/Sidebar';
+import WorkspaceLayout from './components/layout/WorkspaceLayout';
+import './assets/styles/themes/dark.css';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Simulate loading resources
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 2000);
+    
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="loading-screen">
+        <div className="stars-background"></div>
+        <div className="loading-container">
+          <div className="stellar-logo">
+            <span className="logo-text">Stellar IDE</span>
+            <div className="orbit-container">
+              <div className="planet"></div>
+              <div className="orbit">
+                <div className="satellite"></div>
+              </div>
+            </div>
+          </div>
+          <div className="loading-bar">
+            <div className="loading-progress"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <ThemeProvider>
+      <FileSystemProvider>
+        <BlockchainProvider>
+          <EditorProvider>
+            <div className="app-container">
+              <Header />
+              <div className="main-content">
+                <Sidebar />
+                <WorkspaceLayout />
+              </div>
+            </div>
+          </EditorProvider>
+        </BlockchainProvider>
+      </FileSystemProvider>
+    </ThemeProvider>
+  );
 }
 
-export default App
+export default App;
