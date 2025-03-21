@@ -1,1 +1,1 @@
-# This is the folder for frontend code
+## All details are inside stellar-ide folder please check it out
