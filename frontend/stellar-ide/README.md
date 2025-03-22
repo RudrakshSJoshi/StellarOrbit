@@ -1,8 +1,7 @@
-
 ## Project Structure
 
 ```mermaid
-graph TD;
+graph TD
     A[stellar-ide/] --> B[public/]
     B --> B1[favicon.ico]
     B --> B2[assets/]
