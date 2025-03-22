@@ -151,6 +151,7 @@ def generate_prompt(user_query):
         "1. If the user provides a code snippet, debug it and explain the issues.\n"
         "2. If the user requests a simple smart contract involving cross-contract calls, generate the code and explain it.\n"
         "3. If the user asks about specific functions, macros, or code parts related to cross-contract calls, provide detailed assistance.\n\n"
+        "4. If the user provides a code snippet, and requests a copilot assistance through a prompt with debugging and explaining the issues.\n"
         "For reference, here are sample smart contract codes for cross-contract calls:\n"
         "**Contract A (Target Contract)**:\n"
         f"```rust\n{sample_code_contract_a}\n```\n\n"
