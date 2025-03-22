@@ -46,21 +46,35 @@ def generate_prompt(user_query):
     rust_examples = """
     ### Key Rust Data Structures and Functions in Soroban SDK:
 
-    1. **Instance Storage**:
+    1. **Storage Management**:
+       - `env.storage().persistent()`: Access persistent storage.
+       - `env.storage().temporary()`: Access temporary storage.
        - `env.storage().instance()`: Access instance storage, which is specific to the contract instance.
-       - `set(key, value)`: Store a value in instance storage.
-       - `get(key)`: Retrieve a value from instance storage.
+       - `set(key, value)`: Store a value in storage.
+       - `get(key)`: Retrieve a value from storage.
+       - `has(key)`: Check if a key exists in storage.
+       - `remove(key)`: Delete a key from storage.
        - `extend_ttl(min_ledgers_to_live, max_ledgers_to_live)`: Extend the time-to-live (TTL) of instance storage.
 
-    2. **Symbols**:
-       - `symbol_short!("name")`: Create a short symbol for use as a key in storage.
+    2. **Data Types**:
+       - `String`: A string type for smart contracts.
+       - `BytesN`: A fixed-size byte array (e.g., for addresses).
+       - `Vec`: A dynamic array.
+       - `Map`: A key-value map.
        - `Symbol`: A type representing a symbol, used for keys in storage.
+       - `symbol_short!("name")`: Create a short symbol for use as a key in storage.
 
-    3. **Logging**:
+    3. **Common Functions**:
+       - `env.authenticated_address()`: Get the authenticated address of the caller.
+       - `env.invoker()`: Get the address of the invoker.
+       - `env.ledger().sequence()`: Get the current ledger sequence number.
+       - `String::from_str(&env, "text")`: Create a `String` from a string literal.
+       - `vec![&env, item1, item2]`: Create a vector with items.
        - `log!(&env, "message")`: Log a message to the contract's log output.
 
     4. **Error Handling**:
        - Use `unwrap_or` for graceful error handling instead of `expect`.
+       - Example: `env.storage().get(&key).unwrap_or(default_value)`.
        - Example: `env.storage().instance().get(&key).unwrap_or(default_value)`.
 
     ### Example of Correct Instance Storage Usage:
@@ -133,6 +147,7 @@ def generate_prompt(user_query):
         "1. If the user provides a code snippet, debug it and explain the issues.\n"
         "2. If the user requests a simple smart contract involving storage, generate the code and explain it.\n"
         "3. If the user asks about specific functions, macros, or code parts related to storage in smart contracts, provide detailed assistance.\n\n"
+        "4. If the user provides a code snippet, and requests a copilot assistance through a prompt with debugging and explaining the issues.\n"
         "For reference, here is a sample smart contract code that uses instance storage to manage a counter:\n"
         f"```rust\n{sample_code}\n```\n\n"
         "Key points about the sample code:\n"
@@ -171,8 +186,32 @@ def main():
     Main function to handle user input and interact with the Groq API.
     """
     # Ask for user input
-    user_query = """Write me a code to enter user details
-Use the Soroban SDK and ensure the contract is memory-efficient."""
+    user_query = """Copilot Code Requested
+
+#![no_std]
+use soroban_sdk::{contract, contractimpl, symbol_short, Env, Symbol, log};
+
+const COUNTER: Symbol = symbol_short!("COUNTER");
+
+#[contract]
+pub struct IncrementContract;
+
+#[contractimpl]
+impl IncrementContract {
+    pub fn increment(env: Env) -> u32 {
+        // Retrieve the current counter value from instance storage
+        let mut count: u32 = env.storage().instance().get(&COUNTER).unwrap_or(0);
+        log!(&env, "count: {}", count);
+
+        ######
+        Copilot Code Requested
+        User Request: Increment the counter, update the storage, and extend the TTL.
+        ######
+
+        // Return the updated counter value
+        count
+    }
+}"""
 
     # Generate the prompt
     prompt = generate_prompt(user_query)

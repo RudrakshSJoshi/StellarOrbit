@@ -221,6 +221,7 @@ def generate_prompt(user_query):
         "1. If the user provides a code snippet, debug it and explain the issues.\n"
         "2. If the user requests a simple smart contract involving atomic swaps, generate the code and explain it.\n"
         "3. If the user asks about specific functions, macros, or code parts related to atomic swaps, provide detailed assistance.\n\n"
+        "4. If the user provides a code snippet, and requests a copilot assistance through a prompt with debugging and explaining the issues.\n"
         "For reference, here is a sample smart contract code for atomic swaps:\n"
         f"```rust\n{sample_code_atomic_swap}\n```\n\n"
         "Key points about the sample code:\n"

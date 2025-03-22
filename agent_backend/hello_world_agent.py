@@ -111,6 +111,7 @@ def generate_prompt(user_query):
         "1. If the user provides a code snippet, debug it and explain the issues.\n"
         "2. If the user requests a simple smart contract involving strings, generate the code and explain it.\n"
         "3. If the user asks about specific functions, macros, or code parts related to strings in smart contracts, provide detailed assistance.\n\n"
+        "4. If the user provides a code snippet, and requests a copilot assistance through a prompt with debugging and explaining the issues.\n"
         "For reference, here is a sample smart contract code that stores and returns a greeting message:\n"
         f"```rust\n{sample_code}\n```\n\n"
         "Key points about the sample code:\n"
