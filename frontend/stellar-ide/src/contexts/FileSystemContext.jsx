@@ -143,9 +143,23 @@ export const FileSystemProvider = ({ children }) => {
   }, [activeProject, isLoading]);
   
   // Create a new project
-  const createProject = (projectName) => {
-    if (projects.includes(projectName)) {
-      throw new Error(`Project "${projectName}" already exists`);
+  // Create a new project
+  // Create a new project
+const createProject = async (projectName) => {
+  try {
+    // Call backend API to create project without checking existence
+    const response = await fetch('http://localhost:5001/api/projects', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ name: projectName })
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to create project');
     }
     
     // Add to projects list
@@ -155,8 +169,13 @@ export const FileSystemProvider = ({ children }) => {
     const projectKey = `stellarIDE_fileSystem_${projectName}`;
     localStorage.setItem(projectKey, JSON.stringify(initialFileSystem));
     
+    console.log(`Project ${projectName} created successfully!`);
     return true;
-  };
+  } catch (error) {
+    console.error('Error creating project:', error);
+    throw error;
+  }
+};
   
   // Switch to a different project
   const switchProject = (projectName) => {

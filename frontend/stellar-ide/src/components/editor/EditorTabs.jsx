@@ -1,4 +1,6 @@
 import { useEditor } from '../../contexts/EditorContext';
+import { useFileSystem } from '../../contexts/FileSystemContext';
+import CompileDeployToolbar from '../project/CompileDeployToolbar';
 
 const EditorTabs = () => {
   const { 
@@ -7,6 +9,8 @@ const EditorTabs = () => {
     setActiveFile, 
     closeFile 
   } = useEditor();
+  
+  const { activeProject } = useFileSystem();
   
   const handleTabClick = (path) => {
     setActiveFile(path);
@@ -37,49 +41,56 @@ const EditorTabs = () => {
   };
   
   return (
-    <div className="editor-tabs">
-      <div className="tabs-container">
-        {openFiles.map(file => (
-          <div 
-            key={file.path} 
-            className={`tab ${activeFile === file.path ? 'active' : ''}`}
-            onClick={() => handleTabClick(file.path)}
-          >
-            <span className="tab-icon">{getFileIcon(file.path)}</span>
-            <span className="tab-name">{getFileName(file.path)}</span>
-            <button 
-              className="tab-close"
-              onClick={(e) => handleCloseTab(e, file.path)}
+    <div className="editor-tabs-container">
+      <div className="editor-tabs">
+        <div className="tabs-container">
+          {openFiles.map(file => (
+            <div 
+              key={file.path} 
+              className={`tab ${activeFile === file.path ? 'active' : ''}`}
+              onClick={() => handleTabClick(file.path)}
             >
-              ×
-            </button>
-          </div>
-        ))}
+              <span className="tab-icon">{getFileIcon(file.path)}</span>
+              <span className="tab-name">{getFileName(file.path)}</span>
+              <button 
+                className="tab-close"
+                onClick={(e) => handleCloseTab(e, file.path)}
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+        
+        <div className="editor-toolbar">
+          {activeFile && (
+            <>
+              <button className="toolbar-button" title="Save">
+                💾
+              </button>
+              <button className="toolbar-button" title="Format Code">
+                🔧
+              </button>
+              <div className="toolbar-separator"></div>
+              <select className="toolbar-dropdown">
+                <option value="rust">Rust</option>
+                <option value="javascript">JavaScript</option>
+                <option value="markdown">Markdown</option>
+              </select>
+            </>
+          )}
+        </div>
       </div>
       
-      <div className="editor-toolbar">
-        {activeFile && (
-          <>
-            <button className="toolbar-button" title="Save">
-              💾
-            </button>
-            <button className="toolbar-button" title="Format Code">
-              🔧
-            </button>
-            <button className="toolbar-button" title="Compile">
-              🛠️
-            </button>
-            <div className="toolbar-separator"></div>
-            <select className="toolbar-dropdown">
-              <option value="rust">Rust</option>
-              <option value="javascript">JavaScript</option>
-              <option value="markdown">Markdown</option>
-            </select>
-          </>
-        )}
-      </div>
+      {/* Add Compile/Deploy Toolbar for Soroban */}
+      <CompileDeployToolbar projectName={activeProject} />
       
       <style jsx>{`
+        .editor-tabs-container {
+          display: flex;
+          flex-direction: column;
+        }
+        
         .editor-tabs {
           display: flex;
           justify-content: space-between;

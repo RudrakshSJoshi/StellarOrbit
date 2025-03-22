@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import FileTree from '../editor/FileTree';
 import { useBlockchain } from '../../contexts/BlockchainContext';
 import { useFileSystem } from '../../contexts/FileSystemContext';
+import NewProjectModal from '../projects/NewProjectModal';
 
 const Sidebar = () => {
   const [activeTab, setActiveTab] = useState('files');
@@ -12,7 +13,6 @@ const Sidebar = () => {
   const [newAccountName, setNewAccountName] = useState('');
   const [secretKey, setSecretKey] = useState('');
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
-  const [newProjectName, setNewProjectName] = useState('');
   
   const tabs = [
     { id: 'files', icon: '📄', label: 'Files' },
@@ -21,6 +21,12 @@ const Sidebar = () => {
     { id: 'search', icon: '🔍', label: 'Search' },
     { id: 'settings', icon: '⚙️', label: 'Settings' },
   ];
+  
+  // Fetch projects on component mount
+  useEffect(() => {
+    // This would be replaced with an actual API call in a real implementation
+    console.log('Fetching projects...');
+  }, []);
   
   const handleSearch = () => {
     if (searchQuery.trim()) {
@@ -51,19 +57,12 @@ const Sidebar = () => {
     }
   };
   
-  const handleCreateProject = () => {
-    if (newProjectName.trim()) {
-      try {
-        createProject(newProjectName);
-        setNewProjectName('');
-        setShowNewProjectModal(false);
-        // Switch to the newly created project
-        switchProject(newProjectName);
-      } catch (error) {
-        console.error('Error creating project:', error);
-        // In a real app, show an error notification
-      }
-    }
+  const handleProjectCreated = (projectName) => {
+    // Update local state or trigger a refresh of projects
+    console.log(`Project ${projectName} created! Refreshing projects list...`);
+    // In a real implementation, this would update the projects list
+    // For now, we'll just switch to the new project
+    switchProject(projectName);
   };
   
   return (
@@ -374,53 +373,10 @@ const Sidebar = () => {
       </div>
       
       {showNewProjectModal && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <div className="modal-header">
-              <h3>Create New Project</h3>
-              <button 
-                className="close-button"
-                onClick={() => setShowNewProjectModal(false)}
-              >
-                ✖
-              </button>
-            </div>
-            <div className="modal-content">
-              <div className="form-group">
-                <label>Project Name</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  value={newProjectName}
-                  onChange={(e) => setNewProjectName(e.target.value)}
-                  placeholder="my-stellar-project"
-                />
-              </div>
-              <div className="form-group">
-                <label>Template</label>
-                <select className="form-control">
-                  <option value="empty">Empty Project</option>
-                  <option value="token">Token Contract</option>
-                  <option value="escrow">Escrow Contract</option>
-                </select>
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button 
-                className="cancel-button"
-                onClick={() => setShowNewProjectModal(false)}
-              >
-                Cancel
-              </button>
-              <button 
-                className="create-button"
-                onClick={handleCreateProject}
-              >
-                Create Project
-              </button>
-            </div>
-          </div>
-        </div>
+        <NewProjectModal 
+          onClose={() => setShowNewProjectModal(false)}
+          onProjectCreated={handleProjectCreated}
+        />
       )}
       
       <style jsx>{`
@@ -810,105 +766,6 @@ const Sidebar = () => {
         
         .ai-icon {
           margin-right: 8px;
-        }
-        
-        /* Modal */
-        .modal-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background-color: rgba(0, 0, 0, 0.5);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 1000;
-        }
-        
-        .modal {
-          width: 400px;
-          background-color: var(--background-secondary);
-          border-radius: var(--border-radius);
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-          overflow: hidden;
-        }
-        
-        .modal-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 16px;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        
-        .modal-header h3 {
-          font-size: 16px;
-          font-weight: 600;
-          color: var(--text-primary);
-        }
-        
-        .close-button {
-          width: 24px;
-          height: 24px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background-color: transparent;
-          border-radius: 50%;
-          color: var(--text-secondary);
-        }
-        
-        .close-button:hover {
-          background-color: rgba(255, 255, 255, 0.1);
-          color: var(--text-primary);
-        }
-        
-        .modal-content {
-          padding: 16px;
-        }
-        
-        .form-group {
-          margin-bottom: 16px;
-        }
-        
-        .form-group label {
-          display: block;
-          margin-bottom: 8px;
-          font-size: 14px;
-          color: var(--text-secondary);
-        }
-        
-        .form-control {
-          width: 100%;
-          background-color: var(--background-tertiary);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: var(--border-radius);
-          padding: 8px 12px;
-          color: var(--text-primary);
-        }
-        
-        .modal-footer {
-          display: flex;
-          justify-content: flex-end;
-          padding: 16px;
-          border-top: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        
-        .cancel-button {
-          background-color: transparent;
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          color: var(--text-primary);
-          border-radius: var(--border-radius);
-          padding: 8px 16px;
-          margin-right: 8px;
-        }
-        
-        .create-button {
-          background-color: var(--accent-primary);
-          color: white;
-          border-radius: var(--border-radius);
-          padding: 8px 16px;
         }
       `}</style>
     </div>
