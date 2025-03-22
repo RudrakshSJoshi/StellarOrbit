@@ -7,6 +7,7 @@ import Header from './components/layout/Header';
 import Sidebar from './components/layout/Sidebar';
 import WorkspaceLayout from './components/layout/WorkspaceLayout';
 import './assets/styles/themes/dark.css';
+import APITest from './components/debug/APITest';
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);

@@ -1,9 +1,16 @@
 import { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useFileSystem } from '../../contexts/FileSystemContext';
 
 const Header = () => {
   const { theme, toggleTheme } = useTheme();
+  const { activeProject } = useFileSystem();
   const [networkType, setNetworkType] = useState('testnet');
+  const location = useLocation();
+  
+  // Check if we're on a Backend Code page
+  const isBackendCodePage = location.pathname.startsWith('/backend-code');
   
   return (
     <header className="header">
@@ -16,7 +23,10 @@ const Header = () => {
         </div>
         
         <nav className="main-nav">
-          <button className="nav-item active">Editor</button>
+          <Link to="/" className={`nav-item ${!isBackendCodePage ? 'active' : ''}`}>Editor</Link>
+          <Link to={`/backend-code/${activeProject || ''}`} className={`nav-item ${isBackendCodePage ? 'active' : ''}`}>
+            Backend Code
+          </Link>
           <button className="nav-item">Deploy</button>
           <button className="nav-item">Interact</button>
           <button className="nav-item">Explorer</button>
@@ -118,6 +128,9 @@ const Header = () => {
           border-radius: var(--border-radius);
           color: var(--text-secondary);
           font-weight: 500;
+          text-decoration: none;
+          display: flex;
+          align-items: center;
         }
         
         .nav-item:hover {
@@ -173,7 +186,7 @@ const Header = () => {
         }
         
         .connect-wallet {
-          background: linear-gradient(135deg, var(--space-light-blue), var(--space-purple));
+         background: linear-gradient(135deg, var(--space-light-blue), var(--space-purple));
           color: white;
           font-weight: 500;
           padding: 8px 16px;

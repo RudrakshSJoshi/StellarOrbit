@@ -1,131 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useFileSystem } from './FileSystemContext';
 
-// Initial sample file content
-const initialRustContract = `use soroban_sdk::{contractimpl, log, symbol_short, vec, Env, Symbol, Vec};
-
-pub struct Contract;
-
-#[contractimpl]
-impl Contract {
-    pub fn hello(env: Env, to: Symbol) -> Vec<Symbol> {
-        log!(&env, "Hello {}", to);
-        vec![&env, symbol_short!("Hello"), to]
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-    use soroban_sdk::testutils::Address as _;
-    use soroban_sdk::{symbol_short, vec, Env, Symbol, Vec};
-
-    #[test]
-    fn test_hello() {
-        let env = Env::default();
-        let contract_id = env.register_contract(None, Contract);
-        let client = ContractClient::new(&env, &contract_id);
-
-        let name = symbol_short!("Dev");
-        let res = client.hello(&name);
-
-        assert_eq!(res, vec![&env, symbol_short!("Hello"), name]);
-    }
-}`;
-
-const initialJavaScriptDeploy = `// Deploy script for Soroban contract
-const StellarSdk = require('stellar-sdk');
-const fs = require('fs');
-const path = require('path');
-
-// Configure Stellar network
-const server = new StellarSdk.Server('https://horizon-testnet.stellar.org');
-const network = StellarSdk.Networks.TESTNET;
-
-// Load contract WASM
-const contractPath = path.resolve(__dirname, '../target/wasm32-unknown-unknown/release/hello_world.wasm');
-const contractCode = fs.readFileSync(contractPath);
-
-// Load deployer account
-const deployerKeypair = StellarSdk.Keypair.fromSecret('YOUR_SECRET_KEY');
-
-async function deployContract() {
-  try {
-    // Get account sequence number
-    const account = await server.loadAccount(deployerKeypair.publicKey());
-    
-    // Create transaction
-    const transaction = new StellarSdk.TransactionBuilder(account, {
-      fee: '100000', // 0.01 XLM
-      networkPassphrase: network
-    })
-    .addOperation(StellarSdk.Operation.uploadContractWasm({
-      wasm: contractCode.toString('base64')
-    }))
-    .setTimeout(30)
-    .build();
-    
-    // Sign and submit transaction
-    transaction.sign(deployerKeypair);
-    const result = await server.submitTransaction(transaction);
-    
-    console.log('Contract deployed successfully!');
-    console.log('Contract ID:', result.hash);
-    
-    return result;
-  } catch (error) {
-    console.error('Error deploying contract:', error);
-    throw error;
-  }
-}
-
-deployContract();`;
-
-const initialReadme = `# Stellar Smart Contract Project
-
-This project contains a sample Soroban smart contract written in Rust for the Stellar blockchain.
-
-## Getting Started
-
-### Prerequisites
-
-- Rust toolchain with wasm32-unknown-unknown target
-- Soroban CLI
-- Node.js and npm (for deployment scripts)
-
-### Build
-
-To build the contract:
-
-\`\`\`
-cargo build --target wasm32-unknown-unknown --release
-\`\`\`
-
-### Test
-
-To run the tests:
-
-\`\`\`
-cargo test
-\`\`\`
-
-### Deploy
-
-To deploy the contract to testnet:
-
-\`\`\`
-node scripts/deploy.js
-\`\`\`
-
-## Contract Functions
-
-- **hello(to: Symbol)** - Returns a greeting to the specified name
-
-## License
-
-MIT
-`;
-
 // Create the context
 const EditorContext = createContext(null);
 
@@ -142,7 +17,19 @@ export const EditorProvider = ({ children }) => {
     minimap: true,
     lineNumbers: true,
   });
-  const { getFileContent, saveFileContent } = useFileSystem();
+  
+  const { 
+    getFileContent, 
+    saveFileContent, 
+    activeProject 
+  } = useFileSystem();
+  
+  // Close all open files when project changes
+  useEffect(() => {
+    setOpenFiles([]);
+    setActiveFile(null);
+    setEditorHistory({});
+  }, [activeProject]);
   
   // Function to open a file
   const openFile = async (filePath) => {
@@ -154,50 +41,36 @@ export const EditorProvider = ({ children }) => {
     
     try {
       // Get content from file system service
-      let content = await getFileContent(filePath);
+      const content = await getFileContent(filePath);
       
-      // If file doesn't exist yet (or we're in demo mode), use placeholder content
-      if (!content) {
-        if (filePath.endsWith('.rs')) {
-          content = initialRustContract;
-        } else if (filePath.endsWith('.js')) {
-          content = initialJavaScriptDeploy;
-        } else if (filePath.endsWith('.md')) {
-          content = initialReadme;
-        } else if (filePath.endsWith('.toml')) {
-          content = '[package]\nname = "stellar-contract"\nversion = "0.1.0"\nedition = "2021"\n\n[lib]\ncrate-type = ["cdylib"]\n\n[dependencies]\nsoroban-sdk = "0.8.0"\n\n[dev-dependencies]\nsoroban-sdk = { version = "0.8.0", features = ["testutils"] }';
-        } else {
-          content = '// New file';
-        }
+      if (content !== null) {
+        // Add file to open files
+        setOpenFiles(prev => [
+          ...prev,
+          { 
+            path: filePath, 
+            content,
+            isDirty: false,
+            language: getLanguageFromPath(filePath),
+            lastModified: new Date().toISOString()
+          }
+        ]);
         
-        // Save the new file to the file system
-        await saveFileContent(filePath, content);
+        // Set as active file
+        setActiveFile(filePath);
+        
+        // Initialize history for this file
+        setEditorHistory(prev => ({
+          ...prev,
+          [filePath]: {
+            past: [],
+            future: [],
+            currentContent: content
+          }
+        }));
+      } else {
+        console.error(`Could not open file ${filePath}: Content is null`);
       }
-      
-      // Add file to open files
-      setOpenFiles(prev => [
-        ...prev,
-        { 
-          path: filePath, 
-          content,
-          isDirty: false,
-          language: getLanguageFromPath(filePath),
-          lastModified: new Date().toISOString()
-        }
-      ]);
-      
-      // Set as active file
-      setActiveFile(filePath);
-      
-      // Initialize history for this file
-      setEditorHistory(prev => ({
-        ...prev,
-        [filePath]: {
-          past: [],
-          future: [],
-          currentContent: content
-        }
-      }));
     } catch (error) {
       console.error(`Error opening file ${filePath}:`, error);
       throw error;
@@ -267,18 +140,22 @@ export const EditorProvider = ({ children }) => {
     
     // Auto-save if enabled
     if (editorSettings.autoSave) {
-      const saveTimeout = setTimeout(() => {
-        saveFileContent(filePath, newContent);
-        
-        // Mark file as not dirty after save
-        setOpenFiles(prev => prev.map(file => 
-          file.path === filePath 
-            ? { ...file, isDirty: false } 
-            : file
-        ));
+      const debouncedSave = setTimeout(() => {
+        saveFileContent(filePath, newContent)
+          .then(() => {
+            // Mark file as not dirty after save
+            setOpenFiles(prev => prev.map(file => 
+              file.path === filePath 
+                ? { ...file, isDirty: false } 
+                : file
+            ));
+          })
+          .catch(error => {
+            console.error(`Error auto-saving file ${filePath}:`, error);
+          });
       }, 1000);
       
-      return () => clearTimeout(saveTimeout);
+      return () => clearTimeout(debouncedSave);
     }
   };
   
@@ -326,33 +203,10 @@ export const EditorProvider = ({ children }) => {
   };
   
   // Function to create a new file
-  const createNewFile = async (filePath, template = 'empty') => {
-    let initialContent = '';
-    
-    // Choose template based on file extension and template parameter
-    if (filePath.endsWith('.rs')) {
-      if (template === 'contract') {
-        initialContent = initialRustContract;
-      } else {
-        initialContent = '// New Rust file';
-      }
-    } else if (filePath.endsWith('.js')) {
-      if (template === 'deploy') {
-        initialContent = initialJavaScriptDeploy;
-      } else {
-        initialContent = '// New JavaScript file';
-      }
-    } else if (filePath.endsWith('.md')) {
-      initialContent = '# New Markdown File';
-    } else if (filePath.endsWith('.toml')) {
-      initialContent = '[package]\nname = "new-project"\nversion = "0.1.0"\n';
-    } else {
-      initialContent = '// New file';
-    }
-    
+  const createNewFile = async (filePath, content = '') => {
     // Save to file system
     try {
-      await saveFileContent(filePath, initialContent);
+      await saveFileContent(filePath, content);
       
       // Open the new file
       await openFile(filePath);
@@ -373,6 +227,8 @@ export const EditorProvider = ({ children }) => {
         return 'rust';
       case 'js':
         return 'javascript';
+      case 'jsx':
+        return 'javascript';
       case 'json':
         return 'json';
       case 'md':
@@ -384,6 +240,13 @@ export const EditorProvider = ({ children }) => {
         return 'yaml';
       case 'txt':
         return 'plaintext';
+      case 'html':
+        return 'html';
+      case 'css':
+        return 'css';
+      case 'ts':
+      case 'tsx':
+        return 'typescript';
       default:
         return 'plaintext';
     }

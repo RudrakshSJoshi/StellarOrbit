@@ -17,7 +17,7 @@ pub struct Contract;
 impl Contract {
     pub fn hello(env: Env, to: String) -> Vec<String> {
         vec![&env, String::from_str(&env, "Hello"), to]
-    }
+    }kjdhsuifbkghrufbckjfg efhdion fhiohsvxoilcx  fr
 }
 
 mod test;

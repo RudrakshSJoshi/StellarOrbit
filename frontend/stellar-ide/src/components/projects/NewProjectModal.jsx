@@ -1,15 +1,23 @@
 import { useState } from 'react';
-import { createProject } from '../../services/ApiService';
+import { useFileSystem } from '../../contexts/FileSystemContext';
 
 const NewProjectModal = ({ onClose, onProjectCreated }) => {
   const [newProjectName, setNewProjectName] = useState('');
   const [projectType, setProjectType] = useState('token');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const { createProject } = useFileSystem();
   
   const handleCreateProject = async () => {
     if (!newProjectName.trim()) {
       setError('Project name is required');
+      return;
+    }
+    
+    // Validate project name (only lowercase letters, numbers, and hyphens)
+    const validNameRegex = /^[a-z0-9-]+$/;
+    if (!validNameRegex.test(newProjectName)) {
+      setError('Project name must contain only lowercase letters, numbers, and hyphens');
       return;
     }
     
@@ -18,14 +26,12 @@ const NewProjectModal = ({ onClose, onProjectCreated }) => {
     setIsLoading(true);
     
     try {
-      const result = await createProject(newProjectName);
-      console.log('Project created:', result);
+      await createProject(newProjectName);
       
       // Notify parent component
-      onProjectCreated(newProjectName);
-      
-      // Close the modal
-      onClose();
+      if (onProjectCreated) {
+        onProjectCreated(newProjectName);
+      }
     } catch (error) {
       setError(error.message || 'Failed to create project');
     } finally {

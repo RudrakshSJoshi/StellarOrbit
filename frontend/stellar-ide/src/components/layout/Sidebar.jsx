@@ -3,16 +3,43 @@ import FileTree from '../editor/FileTree';
 import { useBlockchain } from '../../contexts/BlockchainContext';
 import { useFileSystem } from '../../contexts/FileSystemContext';
 import NewProjectModal from '../projects/NewProjectModal';
+import { getProjects } from '../../services/ApiService';
 
 const Sidebar = () => {
   const [activeTab, setActiveTab] = useState('files');
   const { accounts, activeAccount, createAccount, importAccount, contractInstances } = useBlockchain();
-  const { searchFiles, projects, activeProject, switchProject, createProject } = useFileSystem();
+  const { 
+    searchFiles, 
+    projects, 
+    activeProject, 
+    switchProject, 
+    isLoading,
+    createProject
+  } = useFileSystem();
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [newAccountName, setNewAccountName] = useState('');
   const [secretKey, setSecretKey] = useState('');
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
+  const [projectCreating, setProjectCreating] = useState(false);
+  
+  // Fetch projects if needed
+  useEffect(() => {
+    if (projects.length === 0 && !isLoading) {
+      // This is a fallback in case FileSystemContext didn't load projects
+      const fetchProjects = async () => {
+        try {
+          const projectList = await getProjects();
+          console.log('Fetched projects:', projectList);
+        } catch (error) {
+          console.error('Error fetching projects:', error);
+        }
+      };
+      
+      fetchProjects();
+    }
+  }, [projects, isLoading]);
   
   const tabs = [
     { id: 'files', icon: '📄', label: 'Files' },
@@ -22,16 +49,15 @@ const Sidebar = () => {
     { id: 'settings', icon: '⚙️', label: 'Settings' },
   ];
   
-  // Fetch projects on component mount
-  useEffect(() => {
-    // This would be replaced with an actual API call in a real implementation
-    console.log('Fetching projects...');
-  }, []);
-  
-  const handleSearch = () => {
+  const handleSearch = async () => {
     if (searchQuery.trim()) {
-      const results = searchFiles(searchQuery);
-      setSearchResults(results);
+      try {
+        const results = await searchFiles(searchQuery);
+        setSearchResults(results);
+      } catch (error) {
+        console.error('Error searching files:', error);
+        setSearchResults([]);
+      }
     } else {
       setSearchResults([]);
     }
@@ -57,14 +83,67 @@ const Sidebar = () => {
     }
   };
   
-  const handleProjectCreated = (projectName) => {
-    // Update local state or trigger a refresh of projects
-    console.log(`Project ${projectName} created! Refreshing projects list...`);
-    // In a real implementation, this would update the projects list
-    // For now, we'll just switch to the new project
-    switchProject(projectName);
+  const handleProjectCreated = async (projectName) => {
+    setProjectCreating(true);
+    try {
+      await createProject(projectName);
+      setShowNewProjectModal(false);
+    } catch (error) {
+      console.error('Error creating project:', error);
+      // In a real app, you would show an error notification here
+    } finally {
+      setProjectCreating(false);
+    }
   };
   
+  // Fixed project switch handler
+  const handleProjectSwitch = async (e) => {
+    const projectName = e.target.value;
+    
+    // Add validation to prevent switching to empty project names
+    if (!projectName || projectName.trim() === '') {
+      console.warn('Cannot switch to empty project name');
+      return; // Early return to prevent the error
+    }
+    
+    try {
+      console.log('Switching to project:', projectName);
+      await switchProject(projectName);
+    } catch (error) {
+      console.error('Error switching project:', error);
+    }
+  };
+  
+  const testAPIConnection = async () => {
+    try {
+      console.log('Testing API connection...');
+      const response = await fetch('http://localhost:5001/api/projects');
+      
+      const responseText = await response.text();
+      console.log('Raw API response:', responseText);
+      
+      let data;
+      try {
+        data = JSON.parse(responseText);
+        console.log('Parsed API response:', data);
+      } catch (e) {
+        console.error('Failed to parse API response as JSON:', e);
+        alert('API returned invalid JSON: ' + responseText);
+        return;
+      }
+      
+      if (response.ok) {
+        alert('API connection successful! Projects: ' + 
+              (data.projects ? JSON.stringify(data.projects) : 'No projects property in response'));
+      } else {
+        alert('API returned error: ' + (data.error || response.status));
+      }
+    } catch (error) {
+      console.error('API test failed:', error);
+      alert('API connection failed: ' + error.message);
+    }
+  };
+
   return (
     <div className="sidebar">
       <div className="sidebar-tabs">
@@ -84,37 +163,33 @@ const Sidebar = () => {
       <div className="sidebar-content">
         {activeTab === 'files' && (
           <div className="files-panel">
-            <div className="panel-header">
-              <h3>Explorer</h3>
-              <div className="panel-actions">
-                <button className="icon-button" title="New File">
-                  <span>+</span>
-                </button>
-                <button className="icon-button" title="New Folder">
-                  <span>📁+</span>
-                </button>
-                <button className="icon-button" title="Refresh">
-                  <span>🔄</span>
-                </button>
-              </div>
-            </div>
-            
             <div className="project-selector">
               <select 
-                value={activeProject} 
-                onChange={(e) => switchProject(e.target.value)}
+                value={activeProject || ''} 
+                onChange={handleProjectSwitch}
                 className="project-select"
+                disabled={isLoading || projectCreating}
               >
-                {projects.map(project => (
-                  <option key={project} value={project}>
-                    {project}
-                  </option>
-                ))}
+                {/* Add a disabled default option to prevent empty selection */}
+                {!activeProject && (
+                  <option value="" disabled>Select a project</option>
+                )}
+                
+                {projects.length > 0 ? (
+                  projects.map(project => (
+                    <option key={project} value={project}>
+                      {project}
+                    </option>
+                  ))
+                ) : (
+                  <option value="" disabled>No projects available</option>
+                )}
               </select>
               <button 
                 className="icon-button" 
                 title="Create New Project"
                 onClick={() => setShowNewProjectModal(true)}
+                disabled={isLoading || projectCreating}
               >
                 <span>+</span>
               </button>
@@ -266,7 +341,7 @@ const Sidebar = () => {
                   {searchResults.map((result, index) => (
                     <div key={index} className="search-result-item">
                       <div className="result-filename">
-                        {result.path.split('/').pop()}
+                        {result.name}
                       </div>
                       <div className="result-path">{result.path}</div>
                     </div>
@@ -364,6 +439,15 @@ const Sidebar = () => {
       </div>
       
       <div className="sidebar-footer">
+        <div className="debug-controls">
+          <button 
+            className="debug-button"
+            onClick={testAPIConnection}
+            title="Test API Connection"
+          >
+            🔌 Test API
+          </button>
+        </div>
         <div className="ai-assistant-toggle">
           <button className="ai-button">
             <span className="ai-icon">🤖</span>
@@ -376,6 +460,7 @@ const Sidebar = () => {
         <NewProjectModal 
           onClose={() => setShowNewProjectModal(false)}
           onProjectCreated={handleProjectCreated}
+          isLoading={projectCreating}
         />
       )}
       
@@ -766,6 +851,26 @@ const Sidebar = () => {
         
         .ai-icon {
           margin-right: 8px;
+        }
+        
+        .debug-controls {
+          margin-bottom: 8px;
+        }
+        
+        .debug-button {
+          width: 100%;
+          padding: 8px;
+          background-color: var(--background-tertiary);
+          color: var(--text-secondary);
+          border-radius: var(--border-radius);
+          font-size: 12px;
+          margin-bottom: 8px;
+          transition: all 0.2s ease;
+        }
+        
+        .debug-button:hover {
+          background-color: var(--background-secondary);
+          color: var(--text-primary);
         }
       `}</style>
     </div>
