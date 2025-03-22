@@ -1,17 +1,20 @@
 from typing import Literal
 import json
 from pydantic import BaseModel
-from groq import Groq
+from groq import Groq, AsyncGroq
+import os
 
 # Initialize Groq client
-groq = Groq()
+groq = AsyncGroq(
+    api_key=os.environ.get("GROQ_API_KEY"),
+)
 
 # Data model for LLM to generate
 class Response(BaseModel):
     expected_field: Literal["general", "storage", "cross_contract", "atomic_swap"]
     reason: str
 
-def determine_agent(user_query: str) -> Response:
+async def determine_agent(user_query: str) -> Response:
     """
     Determines which agent should handle the user's query based on detailed differentiation criteria.
     Returns a JSON response indicating the appropriate agent.
@@ -63,7 +66,7 @@ def determine_agent(user_query: str) -> Response:
     )
 
     # Call the Groq API with JSON response mode
-    chat_completion = groq.chat.completions.create(
+    chat_completion = await groq.chat.completions.create(
         messages=[
             {
                 "role": "user",
@@ -80,35 +83,20 @@ def determine_agent(user_query: str) -> Response:
     # Parse the JSON response into the Response model
     return Response.model_validate_json(chat_completion.choices[0].message.content)
 
-def main():
-    """
-    Main function to handle user input and interact with the Groq API.
-    """
-    # Ask for user input
-    # user_query = input("Enter your query: ")
-    user_query = """
-    Compilation Error Received in the Following Contract, Fix the code below:
+# def main():
+#     """
+#     Main function to handle user input and interact with the Groq API.
+#     """
+#     # Ask for user input
+#     # user_query = input("Enter your query: ")
+#     user_query = """Write a smart contract that calls another contract to perform an addition operation.
+# The contract should store the target contract ID in its storage and retrieve it when needed.
+# """
 
-    ```rust
-    #![no_std]
-    use soroban_sdk::{contract, contractimpl, vec, Env, String, Vec};
+#     # Determine which agent should handle the query
+#     response = determine_agent(user_query)
+#     print(response.expected_field)
+#     print(response.reason)
 
-    #[contract]
-    pub struct Contract;
-
-    #[contractimpl]
-    impl Contract {
-        pub fn hello(env: Env, to: String) -> Vec<String> {
-            vec![&env, String::from_str(&env, "Hello"), to]
-        }
-    }
-    ```
-    """
-
-    # Determine which agent should handle the query
-    response = determine_agent(user_query)
-    print(response.expected_field)
-    print(response.reason)
-
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()

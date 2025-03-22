@@ -1,219 +1,219 @@
-from groq import Groq
+from groq import Groq, AsyncGroq
 import os
 
 # Initialize Groq client
-client = Groq(
+client = AsyncGroq(
     api_key=os.environ.get("GROQ_API_KEY"),
 )
 
-def generate_prompt(user_query):
+async def generate_prompt(user_query):
     """
     Generates a prompt for the Groq model based on the user's query.
     Includes sample code for atomic swaps, Rust data structures, functions, and examples.
     """
     sample_code_atomic_swap = """
-    #![no_std]
-    use soroban_sdk::{contract, contractimpl, Env, Address, token};
+#![no_std]
+use soroban_sdk::{contract, contractimpl, Env, Address, token};
 
-    #[contract]
-    pub struct AtomicSwapContract;
+#[contract]
+pub struct AtomicSwapContract;
 
-    #[contractimpl]
-    impl AtomicSwapContract {
-        // Swap token A for token B atomically. Settle for the minimum requested price
-        // for each party (this is an arbitrary choice to demonstrate the usage of
-        // allowance; full amounts could be swapped as well).
-        pub fn swap(
-            env: Env,
-            a: Address,
-            b: Address,
-            token_a: Address,
-            token_b: Address,
-            amount_a: i128,
-            min_b_for_a: i128,
-            amount_b: i128,
-            min_a_for_b: i128,
-        ) {
-            // Verify preconditions on the minimum price for both parties.
-            if amount_b < min_b_for_a {
-                panic!("not enough token B for token A");
-            }
-            if amount_a < min_a_for_b {
-                panic!("not enough token A for token B");
-            }
-
-            // Require authorization for a subset of arguments specific to a party.
-            a.require_auth_for_args(
-                (token_a.clone(), token_b.clone(), amount_a, min_b_for_a).into_val(&env),
-            );
-            b.require_auth_for_args(
-                (token_b.clone(), token_a.clone(), amount_b, min_a_for_b).into_val(&env),
-            );
-
-            // Perform the swap by moving tokens from a to b and from b to a.
-            move_token(&env, &token_a, &a, &b, amount_a, min_a_for_b);
-            move_token(&env, &token_b, &b, &a, amount_b, min_b_for_a);
-        }
-    }
-
-    fn move_token(
-        env: &Env,
-        token: &Address,
-        from: &Address,
-        to: &Address,
-        max_spend_amount: i128,
-        transfer_amount: i128,
+#[contractimpl]
+impl AtomicSwapContract {
+    // Swap token A for token B atomically. Settle for the minimum requested price
+    // for each party (this is an arbitrary choice to demonstrate the usage of
+    // allowance; full amounts could be swapped as well).
+    pub fn swap(
+        env: Env,
+        a: Address,
+        b: Address,
+        token_a: Address,
+        token_b: Address,
+        amount_a: i128,
+        min_b_for_a: i128,
+        amount_b: i128,
+        min_a_for_b: i128,
     ) {
-        let token = token::Client::new(env, token);
-        let contract_address = env.current_contract_address();
+        // Verify preconditions on the minimum price for both parties.
+        if amount_b < min_b_for_a {
+            panic!("not enough token B for token A");
+        }
+        if amount_a < min_a_for_b {
+            panic!("not enough token A for token B");
+        }
 
-        // Transfer the maximum spend amount to the swap contract's address.
-        token.transfer(from, &contract_address, &max_spend_amount);
-
-        // Transfer the necessary amount to `to`.
-        token.transfer(&contract_address, to, &transfer_amount);
-
-        // Refund the remaining balance to `from`.
-        token.transfer(
-            &contract_address,
-            from,
-            &(&max_spend_amount - &transfer_amount),
+        // Require authorization for a subset of arguments specific to a party.
+        a.require_auth_for_args(
+            (token_a.clone(), token_b.clone(), amount_a, min_b_for_a).into_val(&env),
         );
+        b.require_auth_for_args(
+            (token_b.clone(), token_a.clone(), amount_b, min_a_for_b).into_val(&env),
+        );
+
+        // Perform the swap by moving tokens from a to b and from b to a.
+        move_token(&env, &token_a, &a, &b, amount_a, min_a_for_b);
+        move_token(&env, &token_b, &b, &a, amount_b, min_b_for_a);
     }
-    """
+}
+
+fn move_token(
+    env: &Env,
+    token: &Address,
+    from: &Address,
+    to: &Address,
+    max_spend_amount: i128,
+    transfer_amount: i128,
+) {
+    let token = token::Client::new(env, token);
+    let contract_address = env.current_contract_address();
+
+    // Transfer the maximum spend amount to the swap contract's address.
+    token.transfer(from, &contract_address, &max_spend_amount);
+
+    // Transfer the necessary amount to `to`.
+    token.transfer(&contract_address, to, &transfer_amount);
+
+    // Refund the remaining balance to `from`.
+    token.transfer(
+        &contract_address,
+        from,
+        &(&max_spend_amount - &transfer_amount),
+    );
+}
+"""
 
     # Additional Rust data structures and functions for atomic swaps
     rust_examples = """
-    ### Key Rust Data Structures and Functions for Atomic Swaps:
+### Key Rust Data Structures and Functions for Atomic Swaps:
 
-    1. **Authorization**:
-       - `require_auth_for_args`: Ensures that the specified arguments are authorized by the given address.
-       - Example:
-         ```rust
-         a.require_auth_for_args(
-             (token_a.clone(), token_b.clone(), amount_a, min_b_for_a).into_val(&env),
-         );
-         ```
-
-    2. **Token Transfers**:
-       - `token::Client::new(&env, token)`: Creates a client to interact with a token contract.
-       - `token.transfer(from, to, amount)`: Transfers tokens from one address to another.
-       - Example:
-         ```rust
-         let token = token::Client::new(&env, &token_a);
-         token.transfer(&from, &to, &amount);
-         ```
-
-    3. **Error Handling**:
-       - Use `panic!` for critical errors that should halt execution.
-       - Example:
-         ```rust
-         if amount_b < min_b_for_a {
-             panic!("not enough token B for token A");
-         }
-         ```
-
-    4. **Atomic Swap Logic**:
-       - Verify preconditions (e.g., minimum price) before performing the swap.
-       - Use `move_token` to handle token transfers and refunds.
-
-    ### Example of Correct Atomic Swap Usage:
-    ```rust
-    #![no_std]
-    use soroban_sdk::{contract, contractimpl, Env, Address, token};
-
-    #[contract]
-    pub struct AtomicSwapContract;
-
-    #[contractimpl]
-    impl AtomicSwapContract {
-        pub fn swap(
-            env: Env,
-            a: Address,
-            b: Address,
-            token_a: Address,
-            token_b: Address,
-            amount_a: i128,
-            min_b_for_a: i128,
-            amount_b: i128,
-            min_a_for_b: i128,
-        ) {
-            // Verify preconditions on the minimum price for both parties.
-            if amount_b < min_b_for_a {
-                panic!("not enough token B for token A");
-            }
-            if amount_a < min_a_for_b {
-                panic!("not enough token A for token B");
-            }
-
-            // Require authorization for a subset of arguments specific to a party.
-            a.require_auth_for_args(
-                (token_a.clone(), token_b.clone(), amount_a, min_b_for_a).into_val(&env),
-            );
-            b.require_auth_for_args(
-                (token_b.clone(), token_a.clone(), amount_b, min_a_for_b).into_val(&env),
-            );
-
-            // Perform the swap by moving tokens from a to b and from b to a.
-            move_token(&env, &token_a, &a, &b, amount_a, min_a_for_b);
-            move_token(&env, &token_b, &b, &a, amount_b, min_b_for_a);
-        }
-    }
-
-    fn move_token(
-        env: &Env,
-        token: &Address,
-        from: &Address,
-        to: &Address,
-        max_spend_amount: i128,
-        transfer_amount: i128,
-    ) {
-        let token = token::Client::new(env, token);
-        let contract_address = env.current_contract_address();
-
-        // Transfer the maximum spend amount to the swap contract's address.
-        token.transfer(from, &contract_address, &max_spend_amount);
-
-        // Transfer the necessary amount to `to`.
-        token.transfer(&contract_address, to, &transfer_amount);
-
-        // Refund the remaining balance to `from`.
-        token.transfer(
-            &contract_address,
-            from,
-            &(&max_spend_amount - &transfer_amount),
+1. **Authorization**:
+    - `require_auth_for_args`: Ensures that the specified arguments are authorized by the given address.
+    - Example:
+        ```rust
+        a.require_auth_for_args(
+            (token_a.clone(), token_b.clone(), amount_a, min_b_for_a).into_val(&env),
         );
-    }
-    ```
+        ```
 
-    ### Example of Incorrect Atomic Swap Usage (Avoid This):
-    ```rust
-    #![no_std]
-    use soroban_sdk::{contract, contractimpl, Env, Address, token};
+2. **Token Transfers**:
+    - `token::Client::new(&env, token)`: Creates a client to interact with a token contract.
+    - `token.transfer(from, to, amount)`: Transfers tokens from one address to another.
+    - Example:
+        ```rust
+        let token = token::Client::new(&env, &token_a);
+        token.transfer(&from, &to, &amount);
+        ```
 
-    #[contract]
-    pub struct AtomicSwapContract;
-
-    #[contractimpl]
-    impl AtomicSwapContract {
-        pub fn swap(
-            env: Env,
-            a: Address,
-            b: Address,
-            token_a: Address,
-            token_b: Address,
-            amount_a: i128,
-            min_b_for_a: i128,
-            amount_b: i128,
-            min_a_for_b: i128,
-        ) {
-            // Incorrect: No authorization or precondition checks
-            move_token(&env, &token_a, &a, &b, amount_a, min_a_for_b);
-            move_token(&env, &token_b, &b, &a, amount_b, min_b_for_a);
+3. **Error Handling**:
+    - Use `panic!` for critical errors that should halt execution.
+    - Example:
+        ```rust
+        if amount_b < min_b_for_a {
+            panic!("not enough token B for token A");
         }
+        ```
+
+4. **Atomic Swap Logic**:
+    - Verify preconditions (e.g., minimum price) before performing the swap.
+    - Use `move_token` to handle token transfers and refunds.
+
+### Example of Correct Atomic Swap Usage:
+```rust
+#![no_std]
+use soroban_sdk::{contract, contractimpl, Env, Address, token};
+
+#[contract]
+pub struct AtomicSwapContract;
+
+#[contractimpl]
+impl AtomicSwapContract {
+    pub fn swap(
+        env: Env,
+        a: Address,
+        b: Address,
+        token_a: Address,
+        token_b: Address,
+        amount_a: i128,
+        min_b_for_a: i128,
+        amount_b: i128,
+        min_a_for_b: i128,
+    ) {
+        // Verify preconditions on the minimum price for both parties.
+        if amount_b < min_b_for_a {
+            panic!("not enough token B for token A");
+        }
+        if amount_a < min_a_for_b {
+            panic!("not enough token A for token B");
+        }
+
+        // Require authorization for a subset of arguments specific to a party.
+        a.require_auth_for_args(
+            (token_a.clone(), token_b.clone(), amount_a, min_b_for_a).into_val(&env),
+        );
+        b.require_auth_for_args(
+            (token_b.clone(), token_a.clone(), amount_b, min_a_for_b).into_val(&env),
+        );
+
+        // Perform the swap by moving tokens from a to b and from b to a.
+        move_token(&env, &token_a, &a, &b, amount_a, min_a_for_b);
+        move_token(&env, &token_b, &b, &a, amount_b, min_b_for_a);
     }
-    ```
-    """
+}
+
+fn move_token(
+    env: &Env,
+    token: &Address,
+    from: &Address,
+    to: &Address,
+    max_spend_amount: i128,
+    transfer_amount: i128,
+) {
+    let token = token::Client::new(env, token);
+    let contract_address = env.current_contract_address();
+
+    // Transfer the maximum spend amount to the swap contract's address.
+    token.transfer(from, &contract_address, &max_spend_amount);
+
+    // Transfer the necessary amount to `to`.
+    token.transfer(&contract_address, to, &transfer_amount);
+
+    // Refund the remaining balance to `from`.
+    token.transfer(
+        &contract_address,
+        from,
+        &(&max_spend_amount - &transfer_amount),
+    );
+}
+```
+
+### Example of Incorrect Atomic Swap Usage (Avoid This):
+```rust
+#![no_std]
+use soroban_sdk::{contract, contractimpl, Env, Address, token};
+
+#[contract]
+pub struct AtomicSwapContract;
+
+#[contractimpl]
+impl AtomicSwapContract {
+    pub fn swap(
+        env: Env,
+        a: Address,
+        b: Address,
+        token_a: Address,
+        token_b: Address,
+        amount_a: i128,
+        min_b_for_a: i128,
+        amount_b: i128,
+        min_a_for_b: i128,
+    ) {
+        // Incorrect: No authorization or precondition checks
+        move_token(&env, &token_a, &a, &b, amount_a, min_a_for_b);
+        move_token(&env, &token_b, &b, &a, amount_b, min_b_for_a);
+    }
+}
+```
+"""
 
     prompt = (
         "You are an expert in Rust and smart contract development using the Stellar blockchain and Soroban SDK. "
@@ -255,19 +255,15 @@ def generate_prompt(user_query):
     )
     return prompt
 
-def main():
+async def atomic_swap_agent(user_query):
     """
     Main function to handle user input and interact with the Groq API.
     """
-    # Ask for user input
-    user_query = """Write a smart contract for atomic swaps between two tokens.
-The contract should ensure that both parties authorize the swap and that the minimum price is respected. Write the code with minimal storage."""
-
     # Generate the prompt
-    prompt = generate_prompt(user_query)
+    prompt = await generate_prompt(user_query)
 
     # Call the Groq API
-    stream = client.chat.completions.create(
+    chat_completion = await client.chat.completions.create(
         model="deepseek-r1-distill-llama-70b",
         messages=[
             {
@@ -278,15 +274,8 @@ The contract should ensure that both parties authorize the swap and that the min
         temperature=0.6,  # Optimal temperature for reasoning tasks
         max_completion_tokens=2048,  # Adjust based on complexity
         top_p=0.95,
-        stream=True,  # Enable streaming for incremental output
+        stream=False,  # Enable streaming for incremental output
         reasoning_format="hidden"
     )
 
-    # Print the incremental deltas returned by the LLM.
-    for chunk in stream:
-        content = chunk.choices[0].delta.content
-        if content:
-            print(content, end="")
-
-if __name__ == "__main__":
-    main()
+    return chat_completion.choices[0].message.content

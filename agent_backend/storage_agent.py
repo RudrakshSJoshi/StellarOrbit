@@ -1,12 +1,12 @@
-from groq import Groq
+from groq import Groq, AsyncGroq
 import os
 
 # Initialize Groq client
-client = Groq(
+client = AsyncGroq(
     api_key=os.environ.get("GROQ_API_KEY"),
 )
 
-def generate_prompt(user_query):
+async def generate_prompt(user_query):
     """
     Generates a prompt for the Groq model based on the user's query.
     Includes a sample code reference, Rust data structures, functions, and examples.
@@ -181,43 +181,15 @@ def generate_prompt(user_query):
     )
     return prompt
 
-def main():
+async def storage_agent(user_query):
     """
     Main function to handle user input and interact with the Groq API.
     """
-    # Ask for user input
-    user_query = """Copilot Code Requested
-
-#![no_std]
-use soroban_sdk::{contract, contractimpl, symbol_short, Env, Symbol, log};
-
-const COUNTER: Symbol = symbol_short!("COUNTER");
-
-#[contract]
-pub struct IncrementContract;
-
-#[contractimpl]
-impl IncrementContract {
-    pub fn increment(env: Env) -> u32 {
-        // Retrieve the current counter value from instance storage
-        let mut count: u32 = env.storage().instance().get(&COUNTER).unwrap_or(0);
-        log!(&env, "count: {}", count);
-
-        ######
-        Copilot Code Requested
-        User Request: Increment the counter, update the storage, and extend the TTL.
-        ######
-
-        // Return the updated counter value
-        count
-    }
-}"""
-
     # Generate the prompt
-    prompt = generate_prompt(user_query)
+    prompt = await generate_prompt(user_query)
 
     # Call the Groq API
-    stream = client.chat.completions.create(
+    chat_completion = await client.chat.completions.create(
         model="deepseek-r1-distill-llama-70b",
         messages=[
             {
@@ -228,13 +200,8 @@ impl IncrementContract {
         temperature=0.6,  # Optimal temperature for reasoning tasks
         max_completion_tokens=2048,  # Adjust based on complexity
         top_p=0.95,
-        stream=True,  # Enable streaming for incremental output
+        stream=False,  # Enable streaming for incremental output
         reasoning_format="hidden"
     )
 
-    # Print the incremental deltas returned by the LLM.
-    for chunk in stream:
-        print(chunk.choices[0].delta.content, end="")
-
-if __name__ == "__main__":
-    main()
+    return chat_completion.choices[0].message.content

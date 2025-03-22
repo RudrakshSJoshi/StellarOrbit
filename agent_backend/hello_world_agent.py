@@ -1,12 +1,12 @@
-from groq import Groq
+from groq import Groq, AsyncGroq
 import os
 
 # Initialize Groq client
-client = Groq(
+client = AsyncGroq(
     api_key=os.environ.get("GROQ_API_KEY"),
 )
 
-def generate_prompt(user_query):
+async def generate_prompt(user_query):
     """
     Generates a prompt for the Groq model based on the user's query.
     Includes a sample code reference, Rust data structures, functions, and examples.
@@ -144,19 +144,16 @@ def generate_prompt(user_query):
     )
     return prompt
 
-def main():
+async def hello_world_agent(user_query):
     """
     Main function to handle user input and interact with the Groq API.
     """
-    # Ask for user input
-    user_query = """Write me a code to enter user details
-Use the Soroban SDK and ensure the contract is memory-efficient."""
 
     # Generate the prompt
-    prompt = generate_prompt(user_query)
+    prompt = await generate_prompt(user_query)
 
     # Call the Groq API
-    stream = client.chat.completions.create(
+    chat_completion = await client.chat.completions.create(
         model="deepseek-r1-distill-llama-70b",
         messages=[
             {
@@ -167,13 +164,8 @@ Use the Soroban SDK and ensure the contract is memory-efficient."""
         temperature=0.6,  # Optimal temperature for reasoning tasks
         max_completion_tokens=2048,  # Adjust based on complexity
         top_p=0.95,
-        stream=True,  # Enable streaming for incremental output
+        stream=False,  # Enable streaming for incremental output
         reasoning_format="hidden"
     )
 
-    # Print the incremental deltas returned by the LLM.
-    for chunk in stream:
-        print(chunk.choices[0].delta.content, end="")
-
-if __name__ == "__main__":
-    main()
+    return chat_completion.choices[0].message.content
