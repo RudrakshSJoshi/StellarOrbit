@@ -1,16 +1,48 @@
+// ====================================================================
+// REPLACE YOUR EXISTING src/components/layout/Header.jsx WITH THIS FILE
+// ====================================================================
+
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useFileSystem } from '../../contexts/FileSystemContext';
+import { useBlockchain } from '../../contexts/BlockchainContext';
 
 const Header = () => {
   const { theme, toggleTheme } = useTheme();
   const { activeProject } = useFileSystem();
-  const [networkType, setNetworkType] = useState('testnet');
+  const { activeAccount, accounts, network, changeNetwork } = useBlockchain();
   const location = useLocation();
   
-  // Check if we're on a Backend Code page
+  // Get active account details
+  const getActiveAccountDetails = () => {
+    if (!activeAccount || !accounts || accounts.length === 0) {
+      return null;
+    }
+    
+    return accounts.find(acc => acc.publicKey === activeAccount);
+  };
+  
+  const activeAccountDetails = getActiveAccountDetails();
+  
+  // Format public key for display
+  const formatPublicKey = (key) => {
+    if (!key) return '';
+    return `${key.substring(0, 4)}...${key.substring(key.length - 4)}`;
+  };
+  
+  // Handle network change
+  const handleNetworkChange = (e) => {
+    changeNetwork(e.target.value);
+  };
+  
+  // Check if we're on a specific page
+  const isEditorPage = location.pathname === '/';
   const isBackendCodePage = location.pathname.startsWith('/backend-code');
+  const isAccountsPage = location.pathname.startsWith('/accounts');
+  const isDeployPage = location.pathname.startsWith('/deploy');
+  const isInteractPage = location.pathname.startsWith('/interact');
+  const isExplorerPage = location.pathname.startsWith('/explorer');
   
   return (
     <header className="header">
@@ -23,22 +55,31 @@ const Header = () => {
         </div>
         
         <nav className="main-nav">
-          <Link to="/" className={`nav-item ${!isBackendCodePage ? 'active' : ''}`}>Editor</Link>
+          <Link to="/" className={`nav-item ${isEditorPage ? 'active' : ''}`}>Editor</Link>
           <Link to={`/backend-code/${activeProject || ''}`} className={`nav-item ${isBackendCodePage ? 'active' : ''}`}>
             Backend Code
           </Link>
-          <button className="nav-item">Deploy</button>
-          <button className="nav-item">Interact</button>
-          <button className="nav-item">Explorer</button>
+          <Link to="/accounts" className={`nav-item ${isAccountsPage ? 'active' : ''}`}>
+            Accounts
+          </Link>
+          <Link to="/deploy" className={`nav-item ${isDeployPage ? 'active' : ''}`}>
+            Deploy
+          </Link>
+          <Link to="/interact" className={`nav-item ${isInteractPage ? 'active' : ''}`}>
+            Interact
+          </Link>
+          <Link to="/explorer" className={`nav-item ${isExplorerPage ? 'active' : ''}`}>
+            Explorer
+          </Link>
         </nav>
       </div>
       
       <div className="header-right">
         <div className="network-selector">
           <select 
-            value={networkType}
-            onChange={(e) => setNetworkType(e.target.value)}
-            className={`network-select ${networkType}`}
+            value={network}
+            onChange={handleNetworkChange}
+            className={`network-select ${network}`}
           >
             <option value="testnet">Testnet</option>
             <option value="mainnet">Mainnet</option>
@@ -50,9 +91,21 @@ const Header = () => {
           {theme === 'dark' ? '☀️' : '🌙'}
         </button>
         
-        <button className="connect-wallet">
-          Connect Wallet
-        </button>
+        {activeAccountDetails ? (
+          <div className="active-account">
+            <div className="account-info">
+              <div className="account-name">{activeAccountDetails.name}</div>
+              <div className="account-address">{formatPublicKey(activeAccountDetails.publicKey)}</div>
+            </div>
+            <Link to="/accounts" className="manage-accounts-button">
+              Manage
+            </Link>
+          </div>
+        ) : (
+          <Link to="/accounts" className="connect-wallet">
+            Connect Wallet
+          </Link>
+        )}
       </div>
       
       <style jsx>{`
@@ -186,16 +239,57 @@ const Header = () => {
         }
         
         .connect-wallet {
-         background: linear-gradient(135deg, var(--space-light-blue), var(--space-purple));
+          background: linear-gradient(135deg, var(--space-light-blue), var(--space-purple));
           color: white;
           font-weight: 500;
           padding: 8px 16px;
           border-radius: var(--border-radius);
           transition: all 0.2s ease;
+          text-decoration: none;
         }
         
         .connect-wallet:hover {
           box-shadow: 0 0 15px rgba(30, 136, 229, 0.5);
+        }
+        
+        .active-account {
+          display: flex;
+          align-items: center;
+          background-color: var(--background-tertiary);
+          border-radius: var(--border-radius);
+          padding: 4px 4px 4px 12px;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .account-info {
+          margin-right: 12px;
+        }
+        
+        .account-name {
+          font-size: 14px;
+          font-weight: 500;
+          color: var(--text-primary);
+        }
+        
+        .account-address {
+          font-size: 12px;
+          color: var(--text-secondary);
+          font-family: monospace;
+        }
+        
+        .manage-accounts-button {
+          background-color: rgba(30, 136, 229, 0.1);
+          color: var(--space-bright-blue);
+          padding: 6px 12px;
+          border-radius: var(--border-radius);
+          font-size: 12px;
+          font-weight: 500;
+          text-decoration: none;
+          transition: all 0.2s ease;
+        }
+        
+        .manage-accounts-button:hover {
+          background-color: rgba(30, 136, 229, 0.2);
         }
       `}</style>
     </header>

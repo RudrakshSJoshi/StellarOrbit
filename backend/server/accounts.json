@@ -1,0 +1,18 @@
+{
+  "accounts": [
+    {
+      "name": "pratyy",
+      "publicKey": "GAN6AVHMNXC4Y22EPCKVNVJB6IMAZNBLPSQELMCZOHZBJCOL4TLPUPXF",
+      "network": "testnet",
+      "createdAt": "2025-03-22T17:34:29.442Z",
+      "isFunded": true
+    },
+    {
+      "name": "Ruddy",
+      "publicKey": "GBNOVBNEOWBSFZKYJWZRJN425PD2PQV6ESLKTXXGSLK2FF7JWR4OQAFL",
+      "network": "testnet",
+      "createdAt": "2025-03-22T18:18:02.470Z",
+      "isFunded": true
+    }
+  ]
+}

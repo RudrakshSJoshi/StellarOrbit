@@ -1,7 +1,14 @@
+// ====================================================================
+// REPLACE YOUR EXISTING src/contexts/BlockchainContext.jsx WITH THIS FILE
+// ====================================================================
+
 import { createContext, useContext, useState, useEffect } from 'react';
 
 // Create the context
 const BlockchainContext = createContext(null);
+
+// API URL
+const API_URL = 'http://localhost:5001/api';
 
 // Context provider component
 export const BlockchainProvider = ({ children }) => {
@@ -10,6 +17,8 @@ export const BlockchainProvider = ({ children }) => {
   const [accounts, setAccounts] = useState([]);
   const [activeAccount, setActiveAccount] = useState(null);
   const [contractInstances, setContractInstances] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
   
   // Initialize from local storage on mount
   useEffect(() => {
@@ -18,20 +27,9 @@ export const BlockchainProvider = ({ children }) => {
       setNetwork(storedNetwork);
     }
     
-    const storedAccounts = localStorage.getItem('stellarIDE_accounts');
-    if (storedAccounts) {
-      try {
-        const parsedAccounts = JSON.parse(storedAccounts);
-        setAccounts(parsedAccounts);
-        
-        // Set active account if available
-        const storedActiveAccount = localStorage.getItem('stellarIDE_activeAccount');
-        if (storedActiveAccount && parsedAccounts.some(acc => acc.publicKey === storedActiveAccount)) {
-          setActiveAccount(storedActiveAccount);
-        }
-      } catch (error) {
-        console.error('Error parsing stored accounts:', error);
-      }
+    const storedActiveAccount = localStorage.getItem('stellarIDE_activeAccount');
+    if (storedActiveAccount) {
+      setActiveAccount(storedActiveAccount);
     }
     
     const storedContracts = localStorage.getItem('stellarIDE_contracts');
@@ -42,16 +40,15 @@ export const BlockchainProvider = ({ children }) => {
         console.error('Error parsing stored contracts:', error);
       }
     }
+    
+    // Load accounts from API
+    fetchAccounts();
   }, []);
   
   // Save data to local storage when changed
   useEffect(() => {
     localStorage.setItem('stellarIDE_network', network);
   }, [network]);
-  
-  useEffect(() => {
-    localStorage.setItem('stellarIDE_accounts', JSON.stringify(accounts));
-  }, [accounts]);
   
   useEffect(() => {
     if (activeAccount) {
@@ -62,6 +59,37 @@ export const BlockchainProvider = ({ children }) => {
   useEffect(() => {
     localStorage.setItem('stellarIDE_contracts', JSON.stringify(contractInstances));
   }, [contractInstances]);
+  
+  // Fetch accounts from API
+  const fetchAccounts = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const response = await fetch(`${API_URL}/accounts`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setAccounts(data.accounts);
+        
+        // If we have an activeAccount stored but it's not in the accounts list,
+        // and we have accounts, set the first account as active
+        if (activeAccount && 
+            data.accounts.length > 0 && 
+            !data.accounts.some(acc => acc.publicKey === activeAccount)) {
+          setActiveAccount(data.accounts[0].publicKey);
+        }
+      } else {
+        console.error('Error fetching accounts:', data.error);
+        setError('Failed to load accounts');
+      }
+    } catch (error) {
+      console.error('Error fetching accounts:', error);
+      setError('Failed to load accounts');
+    } finally {
+      setIsLoading(false);
+    }
+  };
   
   // Connect to Stellar network
   const connectToNetwork = async () => {
@@ -97,25 +125,46 @@ export const BlockchainProvider = ({ children }) => {
   };
   
   // Create a new account
-  const createAccount = (accountName) => {
-    // In a real implementation, this would generate keypairs via Stellar SDK
-    // For prototype, create a mock account
-    const newAccount = {
-      name: accountName,
-      publicKey: 'G' + Array(56).fill(0).map(() => 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'[Math.floor(Math.random() * 32)]).join(''),
-      privateKey: 'S' + Array(56).fill(0).map(() => 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'[Math.floor(Math.random() * 32)]).join(''),
-      balance: '10000.0000000',
-      assets: []
-    };
+  const createAccount = async (accountName) => {
+    setIsLoading(true);
+    setError(null);
     
-    setAccounts(prev => [...prev, newAccount]);
-    
-    // If no active account, set this as active
-    if (!activeAccount) {
-      setActiveAccount(newAccount.publicKey);
+    try {
+      const response = await fetch(`${API_URL}/accounts`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: accountName,
+          network: network,
+          fund: true
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Refresh accounts list
+        await fetchAccounts();
+        
+        // Set as active account if none is set
+        if (!activeAccount) {
+          setActiveAccount(data.account.publicKey);
+        }
+        
+        return data.account;
+      } else {
+        setError(data.error || 'Failed to create account');
+        throw new Error(data.error || 'Failed to create account');
+      }
+    } catch (error) {
+      console.error('Error creating account:', error);
+      setError(error.message || 'Failed to create account');
+      throw error;
+    } finally {
+      setIsLoading(false);
     }
-    
-    return newAccount;
   };
   
   // Import an existing account
@@ -159,41 +208,114 @@ export const BlockchainProvider = ({ children }) => {
   };
   
   // Remove an account
-  const removeAccount = (publicKey) => {
-    setAccounts(prev => prev.filter(acc => acc.publicKey !== publicKey));
+  const removeAccount = async (accountName) => {
+    setIsLoading(true);
+    setError(null);
     
-    // If removing active account, set a new active account or null
-    if (activeAccount === publicKey) {
-      const remainingAccounts = accounts.filter(acc => acc.publicKey !== publicKey);
-      if (remainingAccounts.length > 0) {
-        setActiveAccount(remainingAccounts[0].publicKey);
+    try {
+      const response = await fetch(`${API_URL}/accounts/${accountName}`, {
+        method: 'DELETE'
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Get the public key before removing from state
+        const account = accounts.find(acc => acc.name === accountName);
+        const publicKey = account ? account.publicKey : null;
+        
+        // Remove from state
+        setAccounts(prev => prev.filter(acc => acc.name !== accountName));
+        
+        // If removing active account, set a new active account or null
+        if (activeAccount === publicKey) {
+          const remainingAccounts = accounts.filter(acc => acc.name !== accountName);
+          if (remainingAccounts.length > 0) {
+            setActiveAccount(remainingAccounts[0].publicKey);
+          } else {
+            setActiveAccount(null);
+          }
+        }
+        
+        return true;
       } else {
-        setActiveAccount(null);
+        setError(data.error || 'Failed to delete account');
+        return false;
       }
+    } catch (error) {
+      console.error('Error removing account:', error);
+      setError(error.message || 'Failed to delete account');
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // Get account details with balance
+  const getAccountDetails = async (accountName) => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const response = await fetch(`${API_URL}/accounts/${accountName}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        // Update this account in the accounts list
+        setAccounts(prev => prev.map(acc => 
+          acc.name === accountName ? data.account : acc
+        ));
+        
+        return data.account;
+      } else {
+        setError(data.error || 'Failed to get account details');
+        return null;
+      }
+    } catch (error) {
+      console.error('Error getting account details:', error);
+      setError(error.message || 'Failed to get account details');
+      return null;
+    } finally {
+      setIsLoading(false);
     }
   };
   
   // Fund account using Friendbot (testnet only)
-  const fundAccountWithFriendbot = async (publicKey) => {
+  const fundAccountWithFriendbot = async (accountName) => {
     if (network !== 'testnet') {
       throw new Error('Friendbot is only available on testnet');
     }
     
+    setIsLoading(true);
+    setError(null);
+    
     try {
-      // In a real implementation, this would call Friendbot API
-      console.log(`Funding account ${publicKey} with Friendbot...`);
+      // Find the account to get public key
+      const account = accounts.find(acc => acc.name === accountName);
+      if (!account) {
+        throw new Error('Account not found');
+      }
       
-      // Update account balance (mock)
-      setAccounts(prev => prev.map(acc => 
-        acc.publicKey === publicKey
-          ? { ...acc, balance: '10000.0000000' }
-          : acc
-      ));
+      // In a real implementation, this would call Friendbot API
+      console.log(`Funding account ${accountName} with Friendbot...`);
+      
+      // Call stellar CLI to fund the account
+      const { stdout, stderr } = await execAsync(`stellar account fund ${accountName}`);
+      
+      if (stderr && stderr.includes('error')) {
+        throw new Error(stderr);
+      }
+      
+      // After funding, get the updated account details
+      await getAccountDetails(accountName);
       
       return true;
     } catch (error) {
       console.error('Error funding account with Friendbot:', error);
+      setError(error.message || 'Failed to fund account');
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
   
@@ -266,6 +388,8 @@ export const BlockchainProvider = ({ children }) => {
     accounts,
     activeAccount,
     contractInstances,
+    isLoading,
+    error,
     setActiveAccount,
     connectToNetwork,
     disconnectFromNetwork,
@@ -273,9 +397,11 @@ export const BlockchainProvider = ({ children }) => {
     createAccount,
     importAccount,
     removeAccount,
+    getAccountDetails,
     fundAccountWithFriendbot,
     deployContract,
-    callContract
+    callContract,
+    fetchAccounts
   };
   
   return (

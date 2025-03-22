@@ -1,3 +1,7 @@
+// ====================================================================
+// REPLACE YOUR EXISTING src/services/BackendFileService.js WITH THIS FILE
+// ====================================================================
+
 // src/services/BackendFileService.js
 const API_URL = 'http://localhost:5001/api';
 

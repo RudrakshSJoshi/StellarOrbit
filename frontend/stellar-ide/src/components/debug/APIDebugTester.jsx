@@ -1,3 +1,7 @@
+// ====================================================================
+// CREATE NEW FILE: src/components/debug/APIDebugTester.jsx
+// ====================================================================
+
 import React, { useState, useEffect } from 'react';
 
 const APIDebugTester = () => {

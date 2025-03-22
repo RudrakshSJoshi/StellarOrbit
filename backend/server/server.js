@@ -13,18 +13,144 @@ app.use(express.json());
 
 const ROOT_DIR = path.join(__dirname, '..'); // Root directory
 const PROJECTS_DIR = path.join(ROOT_DIR, 'projects'); // Set projects dir correctly
+const ACCOUNTS_FILE = path.join(__dirname, 'accounts.json');
+
 
 // Ensure projects directory exists
 if (!fsSync.existsSync(PROJECTS_DIR)) {
   fsSync.mkdirSync(PROJECTS_DIR);
   console.log('Created projects directory at:', PROJECTS_DIR);
 }
+if (!fsSync.existsSync(ACCOUNTS_FILE)) {
+    fsSync.writeFileSync(ACCOUNTS_FILE, JSON.stringify({
+      accounts: []
+    }));
+  }
 
+  const getAccountsFromFile = async () => {
+    try {
+      const data = await fs.readFile(ACCOUNTS_FILE, 'utf8');
+      return JSON.parse(data);
+    } catch (error) {
+      console.error('Error reading accounts file:', error);
+      return { accounts: [] };
+    }
+  };
+  const saveAccountsToFile = async (accountsData) => {
+    try {
+      await fs.writeFile(ACCOUNTS_FILE, JSON.stringify(accountsData, null, 2));
+      return true;
+    } catch (error) {
+      console.error('Error writing accounts file:', error);
+      return false;
+    }
+  };
+  
+app.get('/api/accounts', async (req, res) => {
+    try {
+      const accountsData = await getAccountsFromFile();
+      res.json({ success: true, accounts: accountsData.accounts });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
 // Add a simple test endpoint
 app.get('/api/test', (req, res) => {
   res.json({ success: true, message: 'API is working' });
 });
 
+app.post('/api/accounts', async (req, res) => {
+    try {
+      const { name, network = 'testnet', fund = true } = req.body;
+      
+      if (!name) {
+        return res.status(400).json({ success: false, error: 'Account name is required' });
+      }
+      
+      // Check if account already exists
+      const accountsData = await getAccountsFromFile();
+      const existingAccount = accountsData.accounts.find(a => a.name === name);
+      if (existingAccount) {
+        return res.status(400).json({ success: false, error: 'Account with this name already exists' });
+      }
+      
+      // Generate a new Stellar account
+      const networkFlag = network ? `--network ${network}` : '';
+      const fundFlag = fund ? '--fund' : '';
+      
+      console.log(`Creating account with command: stellar keys generate --global ${name} ${networkFlag} ${fundFlag}`);
+      
+      try {
+        // Generate the account
+        const { stdout: genOutput, stderr: genError } = await execAsync(
+          `stellar keys generate --global ${name} ${networkFlag} ${fundFlag}`
+        );
+        
+        if (genError && genError.includes('error')) {
+          throw new Error(genError);
+        }
+        
+        // Get the address
+        const { stdout: addressOutput, stderr: addressError } = await execAsync(
+          `stellar keys address ${name}`
+        );
+        
+        if (addressError && addressError.includes('error')) {
+          throw new Error(addressError);
+        }
+        
+        const publicKey = addressOutput.trim();
+        
+        // Save to accounts file
+        const newAccount = {
+          name,
+          publicKey,
+          network,
+          createdAt: new Date().toISOString(),
+          isFunded: fund
+        };
+        
+        accountsData.accounts.push(newAccount);
+        await saveAccountsToFile(accountsData);
+        
+        res.json({ 
+          success: true, 
+          account: newAccount,
+          message: 'Account created successfully',
+          output: genOutput
+        });
+      } catch (cmdError) {
+        // If stellar CLI fails, create a mock account for testing
+        console.error('Error running stellar CLI command:', cmdError);
+        
+        // Generate a fake Stellar account (for development only)
+        const publicKey = 'G' + Array(56).fill(0).map(() => 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'[Math.floor(Math.random() * 32)]).join('');
+        
+        const newAccount = {
+          name,
+          publicKey,
+          network,
+          createdAt: new Date().toISOString(),
+          isFunded: fund,
+          isMock: true
+        };
+        
+        accountsData.accounts.push(newAccount);
+        await saveAccountsToFile(accountsData);
+        
+        res.json({ 
+          success: true, 
+          account: newAccount,
+          message: 'Mock account created (stellar CLI failed)',
+          error: cmdError.message
+        });
+      }
+    } catch (error) {
+      console.error('Error creating account:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+  
 // Initialize a new contract project
 app.post('/api/projects', async (req, res) => {
   try {
@@ -79,7 +205,57 @@ app.post('/api/projects', async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 });
-
+// GET account details
+app.get('/api/accounts/:name', async (req, res) => {
+    try {
+      const { name } = req.params;
+      const accountsData = await getAccountsFromFile();
+      
+      const account = accountsData.accounts.find(a => a.name === name);
+      if (!account) {
+        return res.status(404).json({ success: false, error: 'Account not found' });
+      }
+      
+      // Get account balance if possible
+      try {
+        const { stdout, stderr } = await execAsync(`stellar balance ${name}`);
+        
+        if (!stderr) {
+          const balanceMatch = stdout.match(/XLM\s+([0-9.]+)/);
+          if (balanceMatch && balanceMatch[1]) {
+            account.balance = balanceMatch[1];
+          }
+        }
+      } catch (error) {
+        console.warn(`Could not fetch balance for account ${name}:`, error.message);
+        // Don't fail if balance check fails
+      }
+      
+      res.json({ success: true, account });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+ // DELETE account
+app.delete('/api/accounts/:name', async (req, res) => {
+    try {
+      const { name } = req.params;
+      const accountsData = await getAccountsFromFile();
+      
+      const accountIndex = accountsData.accounts.findIndex(a => a.name === name);
+      if (accountIndex === -1) {
+        return res.status(404).json({ success: false, error: 'Account not found' });
+      }
+      
+      // Remove from accounts file
+      accountsData.accounts.splice(accountIndex, 1);
+      await saveAccountsToFile(accountsData);
+      
+      res.json({ success: true, message: 'Account deleted successfully' });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  }); 
 // Compile the contract
 app.post('/api/projects/:name/compile', async (req, res) => {
   try {
