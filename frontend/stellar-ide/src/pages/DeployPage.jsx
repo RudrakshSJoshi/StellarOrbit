@@ -1,33 +1,47 @@
-// ====================================================================
-// CREATE NEW FILE: src/pages/DeployPage.jsx
-// ====================================================================
-
 import { useState, useEffect } from 'react';
 import Header from '../components/layout/Header';
 import ContractDeployer from '../components/blockchain/ContractDeployer';
 import { useFileSystem } from '../contexts/FileSystemContext';
 import { BlockchainProvider } from '../contexts/BlockchainContext';
 
-
 const DeployPage = () => {
-  const { projects, activeProject, switchProject } = useFileSystem();
+  const { projects, activeProject, switchProject, setProjects } = useFileSystem();
   const [isLoading, setIsLoading] = useState(true);
   const [selectedProject, setSelectedProject] = useState(activeProject || '');
 
+  // Function to fetch projects
+  const fetchProjects = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('http://localhost:5001/api/projects');
+      const data = await response.json();
+
+      if (data.success && data.projects) {
+        setProjects(data.projects);
+        if (data.projects.length > 0 && !selectedProject) {
+          setSelectedProject(data.projects[0]);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Load projects when the component mounts
   useEffect(() => {
-    // If active project is already set, use it as the selected project
     if (activeProject) {
       setSelectedProject(activeProject);
     }
-    setIsLoading(false);
+    fetchProjects();
   }, [activeProject]);
 
   // Handle project change
   const handleProjectChange = async (e) => {
     const newProject = e.target.value;
     setSelectedProject(newProject);
-    
+
     if (newProject) {
       try {
         await switchProject(newProject);
@@ -38,14 +52,20 @@ const DeployPage = () => {
   };
 
   return (
-    
     <div className="deploy-page">
       <Header />
-      
+
       <div className="deploy-content">
         <div className="project-selector">
+          <button 
+            onClick={fetchProjects}
+            className="refresh-button"
+            disabled={isLoading}
+          >
+            Refresh Projects
+          </button>
           <h2>Select Project to Deploy</h2>
-          
+
           {isLoading ? (
             <div className="loading">Loading projects...</div>
           ) : projects.length === 0 ? (
@@ -69,12 +89,12 @@ const DeployPage = () => {
             </div>
           )}
         </div>
-        
+
         <div className="deployer-container">
           <ContractDeployer projectName={selectedProject} />
         </div>
       </div>
-      
+
       <style jsx>{`
         .deploy-page {
           display: flex;
@@ -82,37 +102,37 @@ const DeployPage = () => {
           height: 100vh;
           overflow: hidden;
         }
-        
+
         .deploy-content {
           flex: 1;
           padding: 24px;
           overflow: auto;
           background-color: var(--background-primary);
         }
-        
+
         .project-selector {
           margin-bottom: 24px;
         }
-        
+
         .project-selector h2 {
           margin: 0 0 16px 0;
           font-size: 24px;
           color: var(--text-primary);
         }
-        
+
         .loading, .no-projects-message {
           padding: 20px;
           background-color: var(--background-secondary);
           border-radius: var(--border-radius);
           color: var(--text-secondary);
         }
-        
+
         .project-select-container {
           background-color: var(--background-secondary);
           padding: 20px;
           border-radius: var(--border-radius);
         }
-        
+
         .project-select {
           width: 100%;
           padding: 12px;
@@ -124,7 +144,6 @@ const DeployPage = () => {
         }
       `}</style>
     </div>
-   
   );
 };
 

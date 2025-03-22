@@ -13,6 +13,13 @@
       "network": "testnet",
       "createdAt": "2025-03-22T18:18:02.470Z",
       "isFunded": true
+    },
+    {
+      "name": "rudrkakshkaaccount",
+      "publicKey": "GC7QE6U23W4DV6325B3V4IDCQHDF6FSUWQFDJNYNSKU7HDEUKWYEX5C6",
+      "network": "testnet",
+      "createdAt": "2025-03-22T19:48:27.489Z",
+      "isFunded": true
     }
   ]
 }

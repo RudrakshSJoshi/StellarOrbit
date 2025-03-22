@@ -184,6 +184,17 @@ app.post('/api/projects', async (req, res) => {
       console.log("Command output:", stdout);
       if (stderr) console.error("Command error:", stderr);
       
+      // Now check and fix Cargo.toml to ensure package name matches project name
+      const cargoPath = path.join(projectDir, 'Cargo.toml');
+      if (fsSync.existsSync(cargoPath)) {
+        let cargoContent = await fs.readFile(cargoPath, 'utf8');
+        // Replace the package name with the project name
+        cargoContent = cargoContent.replace(/name\s*=\s*"[^"]+"/, `name = "${name}"`);
+        // Write the updated content back
+        await fs.writeFile(cargoPath, cargoContent);
+        console.log(`Updated package name in Cargo.toml to "${name}"`);
+      }
+      
       res.json({ success: true, message: 'Project created successfully', output: stdout });
       console.log("Project created successfully: ", name);
     } catch (cmdError) {
@@ -256,38 +267,142 @@ app.delete('/api/accounts/:name', async (req, res) => {
       res.status(500).json({ success: false, error: error.message });
     }
   }); 
-// Compile the contract
+
+// Compile the contract - Modified with better WASM file detection
 app.post('/api/projects/:name/compile', async (req, res) => {
   try {
     const { name } = req.params;
     const projectDir = path.join(PROJECTS_DIR, name);
 
+    console.log(`Starting compilation for project: ${name}`);
+    console.log(`Project directory: ${projectDir}`);
+
     if (!fsSync.existsSync(projectDir)) {
       return res.status(404).json({ success: false, error: 'Project not found' });
     }
 
-    const buildResult = await execAsync('stellar contract build', { cwd: projectDir });
-    const wasmPath = path.join(projectDir, 'target', 'wasm32-unknown-unknown', 'release', `${name}.wasm`);
-    const optimizeResult = await execAsync(`stellar contract optimize --wasm ${wasmPath}`, { cwd: projectDir });
+    // Check if the project has the expected Cargo.toml file
+    const cargoPath = path.join(projectDir, 'Cargo.toml');
+    if (!fsSync.existsSync(cargoPath)) {
+      console.error(`Cargo.toml not found in project directory: ${cargoPath}`);
+      return res.status(400).json({ success: false, error: 'Invalid Rust project. Cargo.toml not found.' });
+    }
 
-    res.json({ success: true, buildOutput: buildResult.stdout, optimizeOutput: optimizeResult.stdout });
+    console.log('Running stellar contract build...');
+    try {
+      const buildResult = await execAsync('stellar contract build', { 
+        cwd: projectDir,
+        // Increase maxBuffer to handle larger output
+        maxBuffer: 1024 * 1024 * 10 // 10MB buffer
+      });
+      console.log('Build completed successfully');
+      console.log('Build output:', buildResult.stdout);
+      if (buildResult.stderr) console.log('Build stderr:', buildResult.stderr);
+      
+      // Check if the target directory exists
+      const targetDir = path.join(projectDir, 'target');
+      if (!fsSync.existsSync(targetDir)) {
+        console.error(`Target directory not created: ${targetDir}`);
+        return res.status(500).json({ 
+          success: false, 
+          error: 'Build failed to create target directory',
+          buildOutput: buildResult.stdout
+        });
+      }
+      
+      // Find any WASM file in the release directory
+      const wasmDir = path.join(projectDir, 'target', 'wasm32-unknown-unknown', 'release');
+      console.log(`Looking for WASM files in: ${wasmDir}`);
+      
+      if (!fsSync.existsSync(wasmDir)) {
+        console.error(`WASM directory not found: ${wasmDir}`);
+        return res.status(500).json({ 
+          success: false, 
+          error: 'Build successful but WASM directory not found',
+          buildOutput: buildResult.stdout
+        });
+      }
+      
+      // Get all WASM files in the directory
+      const wasmFiles = fsSync.readdirSync(wasmDir).filter(file => file.endsWith('.wasm'));
+      console.log('Found WASM files:', wasmFiles);
+      
+      if (wasmFiles.length === 0) {
+        console.error(`No WASM files found in: ${wasmDir}`);
+        return res.status(500).json({ 
+          success: false, 
+          error: 'Build successful but no WASM files found',
+          buildOutput: buildResult.stdout
+        });
+      }
+      
+      // Use the first WASM file found
+      const wasmFileName = wasmFiles[0];
+      const wasmPath = path.join(wasmDir, wasmFileName);
+      console.log(`Using WASM file: ${wasmPath}`);
+      
+      console.log('Running stellar contract optimize...');
+      const optimizeResult = await execAsync(`stellar contract optimize --wasm ${wasmPath}`, { 
+        cwd: projectDir,
+        maxBuffer: 1024 * 1024 * 10 // 10MB buffer
+      });
+      console.log('Optimization completed successfully');
+      console.log('Optimize output:', optimizeResult.stdout);
+      if (optimizeResult.stderr) console.log('Optimize stderr:', optimizeResult.stderr);
+
+      return res.json({ 
+        success: true, 
+        buildOutput: buildResult.stdout, 
+        optimizeOutput: optimizeResult.stdout,
+        wasmFile: wasmFileName // Return the WASM filename for reference
+      });
+    } catch (cmdError) {
+      console.error('Command execution error:', cmdError);
+      // Return a more detailed error response
+      return res.status(500).json({ 
+        success: false, 
+        error: `Command execution failed: ${cmdError.message}`,
+        stderr: cmdError.stderr || '',
+        command: cmdError.cmd || 'unknown command'
+      });
+    }
   } catch (error) {
+    console.error('General error in compile endpoint:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
 
-// Deploy the contract
+// Deploy the contract - Updated with better WASM file detection
 app.post('/api/projects/:name/deploy', async (req, res) => {
   try {
     const { name } = req.params;
     const { source, network } = req.body;
 
     const projectDir = path.join(PROJECTS_DIR, name);
-    const wasmPath = path.join(projectDir, 'target', 'wasm32-unknown-unknown', 'release', `${name}.wasm`);
+    const wasmDir = path.join(projectDir, 'target', 'wasm32-unknown-unknown', 'release');
 
-    if (!fsSync.existsSync(wasmPath)) {
-      return res.status(400).json({ success: false, error: 'Compiled WASM not found. Compile the contract first.' });
+    // Check if the directory exists
+    if (!fsSync.existsSync(wasmDir)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'WASM directory not found. Compile the contract first.' 
+      });
     }
+
+    // Get all WASM files in the directory
+    const wasmFiles = fsSync.readdirSync(wasmDir).filter(file => file.endsWith('.wasm'));
+    
+    if (wasmFiles.length === 0) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'No WASM files found. Compile the contract first.' 
+      });
+    }
+
+    // Use the first WASM file found
+    const wasmFileName = wasmFiles[0];
+    const wasmPath = path.join(wasmDir, wasmFileName);
+    console.log(`Using WASM file for deployment: ${wasmPath}`);
 
     const deployResult = await execAsync(
       `stellar contract deploy --wasm ${wasmPath} --source ${source} --network ${network} --alias ${name}`,
@@ -298,8 +413,14 @@ app.post('/api/projects/:name/deploy', async (req, res) => {
     const contractIdMatch = output.match(/Contract ID: ([A-Z0-9]+)/);
     const contractId = contractIdMatch ? contractIdMatch[1] : null;
 
-    res.json({ success: true, output: output, contractId: contractId });
+    res.json({ 
+      success: true, 
+      output: output, 
+      contractId: contractId,
+      wasmFile: wasmFileName
+    });
   } catch (error) {
+    console.error('Deployment error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });

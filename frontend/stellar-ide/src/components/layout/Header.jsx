@@ -43,6 +43,7 @@ const Header = () => {
   const isDeployPage = location.pathname.startsWith('/deploy');
   const isInteractPage = location.pathname.startsWith('/interact');
   const isExplorerPage = location.pathname.startsWith('/explorer');
+  const isTransactionsPage = location.pathname.startsWith('/transactions');
   
   return (
     <header className="header">
@@ -70,6 +71,9 @@ const Header = () => {
           </Link>
           <Link to="/explorer" className={`nav-item ${isExplorerPage ? 'active' : ''}`}>
             Explorer
+          </Link>
+          <Link to="/transactions" className={`nav-item ${isTransactionsPage ? 'active' : ''}`}>
+           Transactions
           </Link>
         </nav>
       </div>
