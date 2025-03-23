@@ -1,5 +1,5 @@
 # Stellar Orbit  
-<img src="data\logo.png" alt="Stellar Orbit Logo" width="200" /> 
+![Stellar Orbit Logo](data\logo.png) 
 
 **An AI-Powered IDE for Stellar Blockchain Development**  
 
@@ -54,13 +54,13 @@ A big thanks to the amazing contributors who made this project possible:
 ---
 
 ## 🌌 **To AI x Crypto!**  
-<img src="data\logo2.png" alt="Stellar Orbit Minimalistic Logo" width="100" />  
+<img src="data\logo2.png" alt="Stellar Orbit Minimalistic Logo" width="300" />  
 
 ---
+
 **Stellar Orbit** - Empowering developers to build the future of blockchain, effortlessly.
 
-[Gitbook Documentation](https://bigbull-ai.gitbook.io/stellar-orbit)
-
+---
 
 ## Architecture
 
