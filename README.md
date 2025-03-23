@@ -1,6 +1,63 @@
-# Stellar IDE
+# Stellar Orbit  
+<img src="data\logo2.png" alt="Stellar Orbit Logo" width="200" /> 
 
-Stellar IDE is a powerful development environment for writing, deploying, and interacting with smart contracts on the Stellar blockchain. It provides an intuitive UI, blockchain integration, AI-assisted development, and debugging tools to streamline the development process.
+**An AI-Powered IDE for Stellar Blockchain Development**  
+
+---
+
+## 🚀 **Tech Stack**  
+Built with the best of modern technologies:  
+![Rust](https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white)  
+![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)  
+![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black)  
+![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)  
+
+---
+
+## ✨ **Core Features**  
+- **Compile & Deploy Contracts**: Easily compile and deploy Stellar smart contracts.  
+- **Address Creation**: Generate Stellar addresses in just a few clicks.  
+- **User-Friendly IDE**: Intuitive interface for seamless development.  
+- **No More CMD Hustle**: Say goodbye to complex command-line operations.  
+
+---
+
+## 🤖 **AI-Powered Features**  
+- **Copilot Integration**: AI-assisted coding for faster and smarter development.  
+- **AI Debugger**: Automatically detect and fix errors in your code.  
+- **AI Code Generator**: Generate boilerplate code with AI assistance.  
+- **AI Assistant**: Get real-time suggestions and solutions for your code.  
+- **Backed by Soroban SDK & Rust Expertise**: Built with deep knowledge of Stellar's ecosystem.  
+
+---
+
+## 🔮 **Future Scope**  
+- **Auto Interaction System**: Automate interactions with Stellar contracts.  
+- **Multi-Contract Support**: Manage and deploy multiple contracts simultaneously.  
+- **No-Code Contract Creation**: Create contracts using flowcharts and visual tools.  
+- **Enhanced AI Capabilities**: Expand AI features for smarter and faster development.  
+
+---
+
+## 📂 **Resources**  
+- [Project Presentation (PPT)](https://www.canva.com/design/DAGihZLdvsM/97qcPNlW1dLeM0E-iAzKfA/edit?utm_content=DAGihZLdvsM&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton)  
+- [GitBook Documentation](https://bigbull-ai.gitbook.io/stellar-orbit)  
+
+---
+
+## 👥 **Contributors**  
+A big thanks to the amazing contributors who made this project possible:  
+- [Rudraksh](https://github.com/RudrakshSJoshi)  
+- [Prateush Sharma](https://github.com/prateushsharma)  
+- [Mihir](https://github.com/Mihir7b311)  
+
+---
+
+## 🌌 **To AI x Crypto!**  
+<img src="data\logo2.png" alt="Stellar Orbit Minimalistic Logo" width="100" />  
+
+---
+**Stellar Orbit** - Empowering developers to build the future of blockchain, effortlessly.
 
 ## Architecture
 
