@@ -1,3 +1,5 @@
+# Stellar IDE
+
 ## Project Structure
 
 ```mermaid
@@ -92,4 +94,39 @@ graph TD
     A --> O[README.md]
 ```
 
+## Getting Started
+
+### Clone this repository
+```sh
+git clone https://github.com/yourusername/stellar-ide.git
+cd stellar-ide
+```
+
+### Install dependencies
+```sh
+npm install
+```
+
+### Start the development server
+```sh
+npm run dev
+```
+
+## Features
+- **Code Editor**: Write and manage smart contract code with syntax highlighting.
+- **Blockchain Interaction**: Deploy and interact with contracts on the Stellar blockchain.
+- **AI Assistant**: Get AI-powered suggestions for contract development.
+- **Terminal & Debugging Tools**: Built-in tools for seamless debugging and testing.
+- **Project Management**: Organize and manage multiple projects easily.
+
+## Contributing
+We welcome contributions! Please follow these steps:
+1. Fork the repository
+2. Create a new branch (`git checkout -b feature-branch`)
+3. Commit your changes (`git commit -m "Add new feature"`)
+4. Push to the branch (`git push origin feature-branch`)
+5. Open a Pull Request
+
+## License
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
