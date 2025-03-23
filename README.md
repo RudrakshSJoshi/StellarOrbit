@@ -1,5 +1,5 @@
 # Stellar Orbit  
-<img src="data\logo2.png" alt="Stellar Orbit Logo" width="200" /> 
+<img src="data\logo.png" alt="Stellar Orbit Logo" width="200" /> 
 
 **An AI-Powered IDE for Stellar Blockchain Development**  
 
