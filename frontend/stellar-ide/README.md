@@ -98,7 +98,7 @@ graph TD
 
 ### Clone this repository
 ```sh
-git clone https://github.com/yourusername/stellar-ide.git
+git clone https://github.com/RudrakshSJoshi/AlephAI.git
 cd stellar-ide
 ```
 
