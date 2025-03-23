@@ -1,5 +1,5 @@
 # Stellar Orbit  
-![Stellar Orbit Logo](data\logo.png) 
+![Stellar Orbit Logo](data/logo.png) 
 
 **An AI-Powered IDE for Stellar Blockchain Development**  
 
