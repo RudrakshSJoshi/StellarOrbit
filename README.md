@@ -1,7 +1,7 @@
 # Stellar Orbit  
 ![Stellar Orbit Logo](data/logo.png) 
 
-**An AI-Powered IDE for Stellar Blockchain Development**  
+### **An AI-Powered IDE for Stellar Blockchain Development**  
 
 ---
 
@@ -47,7 +47,7 @@ Built with the best of modern technologies:
 
 ## 👥 **Contributors**  
 A big thanks to the amazing contributors who made this project possible:  
-- [Rudraksh](https://github.com/RudrakshSJoshi)  
+- [RudrakshSJoshi](https://github.com/RudrakshSJoshi)  
 - [Prateush Sharma](https://github.com/prateushsharma)  
 - [Mihir](https://github.com/Mihir7b311)  
 
