@@ -1,6 +1,8 @@
 # Stellar IDE
 
 Stellar IDE is a powerful development environment for writing, deploying, and interacting with smart contracts on the Stellar blockchain. It provides an intuitive UI, blockchain integration, AI-assisted development, and debugging tools to streamline the development process.
+[Gitbook Documentation](https://bigbull-ai.gitbook.io/stellar-orbit)
+
 
 ## Architecture
 
