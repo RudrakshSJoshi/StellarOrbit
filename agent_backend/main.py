@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Literal
 import asyncio
-from utils import query_handler
+from utils import query_handler, functioniser
 import uvicorn
 
 
@@ -27,6 +27,14 @@ class AIRequest(BaseModel):
 @app.post("/ai")
 async def async_endpoint(request: AIRequest):
     result = await query_handler(request.request_type, request.user_code, request.context)
+    return result
+
+class FunCode(BaseModel):
+    code: str
+
+@app.post("/functioniser")
+async def async_functioniser(request: FunCode):
+    result = await functioniser(request.code)
     return result
 
 if __name__ == "__main__":

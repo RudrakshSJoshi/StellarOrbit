@@ -1,5 +1,6 @@
 import asyncio
 import re
+from functioniser_agent import functoniser_agent
 from validate_request import determine_agent
 from hello_world_agent import hello_world_agent
 from storage_agent import storage_agent
@@ -86,3 +87,6 @@ async def query_handler(request_type: str, user_code: str, context: str):
         "code1": updated_code,
         "code2": extra_code
     }
+
+async def functioniser(contract_code):
+    return await functoniser_agent(contract_code)
