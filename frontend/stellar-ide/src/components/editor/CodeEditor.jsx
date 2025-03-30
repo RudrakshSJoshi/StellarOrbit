@@ -1,7 +1,15 @@
+// src/components/editor/CodeEditor.jsx
 import { useEffect, useRef, useState } from 'react';
 import { useEditor } from '../../contexts/EditorContext';
+import { useFileSystem } from '../../contexts/FileSystemContext';
 import useMonaco from '../../hooks/useMonaco';
+import CopilotAssistant from '../ai/CopilotAssistant';
+import CompileButton from './CompileButton';
 
+/**
+ * CodeEditor component with integrated Monaco editor, Copilot assistant, and compilation support
+ * This component allows users to edit code files and get AI assistance
+ */
 const CodeEditor = () => {
   const editorRef = useRef(null);
   const editorInstanceRef = useRef(null);
@@ -15,7 +23,9 @@ const CodeEditor = () => {
     undoEdit,
     redoEdit
   } = useEditor();
+  const { activeProject } = useFileSystem();
   const [suggestions, setSuggestions] = useState([]);
+  const [currentContent, setCurrentContent] = useState('');
   
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -104,7 +114,7 @@ const CodeEditor = () => {
           { token: 'operator', foreground: 'D4D4D4' },
           { token: 'variable', foreground: '9CDCFE' },
           { token: 'macro', foreground: 'BD63C5', fontStyle: 'bold' },
-          { token: 'attribute', foreground: 'DCDCAA' },
+          { token: 'attribute', foreground: 'DCDCAA' }
         ],
         colors: {
           'editor.background': '#0a0e17',
@@ -228,11 +238,11 @@ const CodeEditor = () => {
           whitespace: [
             [/[ \t\r\n]+/, 'white'],
             [/\/\*/, 'comment', '@comment'],
-            [/\/\/.*$/, 'comment'],
-          ],
+            [/\/\/.*$/, 'comment']
+          ]
         },
         
-        escapes: /\\(?:[abfnrtv\\"']|x[0-9A-Fa-f]{1,4}|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})/,
+        escapes: /\\(?:[abfnrtv\\"']|x[0-9A-Fa-f]{1,4}|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})/
       });
       
       // Register Soroban-specific completions
@@ -298,7 +308,9 @@ const CodeEditor = () => {
       // Track changes and update content
       editor.onDidChangeModelContent(() => {
         if (activeFile) {
-          updateFileContent(activeFile, editor.getValue());
+          const newContent = editor.getValue();
+          updateFileContent(activeFile, newContent);
+          setCurrentContent(newContent);
         }
       });
       
@@ -388,6 +400,7 @@ const CodeEditor = () => {
       const editor = editorInstanceRef.current;
       if (editor) {
         editor.setModel(model);
+        setCurrentContent(currentFile.content);
         
         // Focus the editor
         setTimeout(() => {
@@ -397,6 +410,7 @@ const CodeEditor = () => {
     } else if (editorInstanceRef.current) {
       // If no active file, clear the editor model
       editorInstanceRef.current.setModel(null);
+      setCurrentContent('');
     }
   }, [activeFile, openFiles, monaco, isMonacoLoading]);
   
@@ -419,6 +433,22 @@ const CodeEditor = () => {
   
   return (
     <div className="code-editor-container">
+      {/* Add Copilot Assistant component */}
+      {!isMonacoLoading && editorInstanceRef.current && monaco && (
+        <CopilotAssistant 
+          editor={editorInstanceRef.current} 
+          monaco={monaco} 
+        />
+      )}
+      
+      {/* Add Compile Button */}
+      {!isMonacoLoading && activeProject && activeFile && activeFile.endsWith('.rs') && (
+        <CompileButton 
+          projectName={activeProject}
+          editorContent={currentContent}
+        />
+      )}
+      
       {isMonacoLoading ? (
         <div className="loading-editor">
           <div className="loading-spinner"></div>
@@ -579,6 +609,11 @@ const CodeEditor = () => {
           border-radius: 50%;
           background: linear-gradient(135deg, var(--space-orange), var(--space-pink));
           box-shadow: 0 0 10px rgba(233, 30, 99, 0.6);
+        }
+        
+        @keyframes orbit-rotate {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
         }
         
         .welcome-title {

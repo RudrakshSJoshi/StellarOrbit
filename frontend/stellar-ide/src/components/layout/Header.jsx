@@ -1,12 +1,10 @@
-// ====================================================================
-// REPLACE YOUR EXISTING src/components/layout/Header.jsx WITH THIS FILE
-// ====================================================================
-
+// src/components/layout/Header.jsx
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useFileSystem } from '../../contexts/FileSystemContext';
 import { useBlockchain } from '../../contexts/BlockchainContext';
+import stellarLogo from '../../assets/stellar_ide_logo.png'; // Import the logo
 
 const Header = () => {
   const { theme, toggleTheme } = useTheme();
@@ -44,15 +42,13 @@ const Header = () => {
   const isInteractPage = location.pathname.startsWith('/interact');
   const isExplorerPage = location.pathname.startsWith('/explorer');
   const isTransactionsPage = location.pathname.startsWith('/transactions');
-  
+
   return (
     <header className="header">
       <div className="header-left">
         <div className="logo">
-          <div className="logo-icon">
-            <div className="planet-icon"></div>
-          </div>
-          <h1 className="logo-text">Stellar IDE</h1>
+          <img src={stellarLogo} alt="Stellar Orbit Logo" className="logo-image" />
+          <h1 className="logo-text">Stellar Orbit</h1>
         </div>
         
         <nav className="main-nav">
@@ -135,35 +131,10 @@ const Header = () => {
           margin-right: 40px;
         }
         
-        .logo-icon {
-          position: relative;
-          width: 32px;
+        .logo-image {
           height: 32px;
+          width: auto;
           margin-right: 12px;
-        }
-        
-        .planet-icon {
-          width: 24px;
-          height: 24px;
-          background: linear-gradient(135deg, var(--space-bright-blue), var(--space-blue));
-          border-radius: 50%;
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          box-shadow: 0 0 10px rgba(30, 136, 229, 0.5);
-        }
-        
-        .planet-icon:before {
-          content: '';
-          position: absolute;
-          width: 32px;
-          height: 8px;
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          border-radius: 50%;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%) rotate(30deg);
         }
         
         .logo-text {

@@ -1,0 +1,14 @@
+---
+import * as Client from './packages/hello_world';
+
+const contract = new Client.Client({
+	...Client.networks.testnet,
+	rpcUrl: 'https://sorobon-testnet.stellar.org:443'
+});
+
+const {result} = await contract.hello({to: "Devs!"});
+const greeting = result.join(" ");
+---
+
+<h1>{greeting}</h1>
+

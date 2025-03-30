@@ -320,7 +320,7 @@ export const BlockchainProvider = ({ children }) => {
   };
   
   // Deploy a contract
-  const deployContract = async (contractName, wasmBase64, sourceHash, args = []) => {
+  const deployContract = async (contractName, wasmBase64, sourceHash, args = [], contractAbi = null) => {
     if (!connected) {
       throw new Error('Not connected to network');
     }
@@ -342,6 +342,9 @@ export const BlockchainProvider = ({ children }) => {
         ownerKey: activeAccount,
         network,
         createdAt: new Date().toISOString(),
+        // Store the AI-generated ABI with the contract
+        abi: contractAbi,
+        // Keep the interface for backward compatibility
         interface: [
           {
             name: 'hello',
