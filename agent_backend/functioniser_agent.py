@@ -1,6 +1,11 @@
 from groq import Groq, AsyncGroq
 import os
 import json
+from dotenv import load_dotenv
+import os
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Initialize Groq client
 client = AsyncGroq(
