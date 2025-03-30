@@ -14,7 +14,7 @@ app.use(express.json());
 const ROOT_DIR = path.join(__dirname, '..'); // Root directory
 const PROJECTS_DIR = path.join(ROOT_DIR, 'projects'); // Set projects dir correctly
 const ACCOUNTS_FILE = path.join(__dirname, 'accounts.json');
-
+const CONTRACTS_FILE = path.join(__dirname,'contracts.json');
 
 // Ensure projects directory exists
 if (!fsSync.existsSync(PROJECTS_DIR)) {
@@ -26,6 +26,13 @@ if (!fsSync.existsSync(ACCOUNTS_FILE)) {
       accounts: []
     }));
   }
+  if (!fsSync.existsSync(CONTRACTS_FILE)) {
+    fsSync.writeFileSync(CONTRACTS_FILE, JSON.stringify({
+      contracts: []
+    }));
+  }
+
+
 
   const getAccountsFromFile = async () => {
     try {
@@ -45,6 +52,26 @@ if (!fsSync.existsSync(ACCOUNTS_FILE)) {
       return false;
     }
   };
+  // Get contracts from file
+const getContractsFromFile = async () => {
+  try {
+    const data = await fs.readFile(CONTRACTS_FILE, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    console.error('Error reading contracts file:', error);
+    return { contracts: [] };
+  }
+};
+// Save contracts to file
+const saveContractsToFile = async (contractsData) => {
+  try {
+    await fs.writeFile(CONTRACTS_FILE, JSON.stringify(contractsData, null, 2));
+    return true;
+  } catch (error) {
+    console.error('Error writing contracts file:', error);
+    return false;
+  }
+};
   
 app.get('/api/accounts', async (req, res) => {
     try {
@@ -58,6 +85,95 @@ app.get('/api/accounts', async (req, res) => {
 app.get('/api/test', (req, res) => {
   res.json({ success: true, message: 'API is working' });
 });
+
+// GET all contracts
+app.get('/api/contracts', async (req, res) => {
+  try {
+    const contractsData = await getContractsFromFile();
+    res.json({ success: true, contracts: contractsData.contracts });
+    //console.log(res.json)
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// GET contract by ID
+app.get('/api/contracts/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const contractsData = await getContractsFromFile();
+    
+    const contract = contractsData.contracts.find(c => c.contractId === id);
+    if (!contract) {
+      return res.status(404).json({ success: false, error: 'Contract not found' });
+    }
+    
+    res.json({ success: true, contract });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// POST new contract
+app.post('/api/contracts', async (req, res) => {
+  try {
+    const { name, contractId, project, ownerKey, network, abi } = req.body;
+    
+    if (!name || !contractId || !project || !ownerKey || !network) {
+      return res.status(400).json({ success: false, error: 'Missing required fields' });
+    }
+    
+    const contractsData = await getContractsFromFile();
+    
+    // Check if contract already exists
+    const existingContract = contractsData.contracts.find(c => c.contractId === contractId);
+    if (existingContract) {
+      return res.status(400).json({ success: false, error: 'Contract already exists' });
+    }
+    
+    // Add new contract
+    const newContract = {
+      name,
+      contractId,
+      project,
+      ownerKey,
+      network,
+      createdAt: new Date().toISOString(),
+      abi: abi || null
+    };
+    
+    contractsData.contracts.push(newContract);
+    await saveContractsToFile(contractsData);
+    
+    res.json({ success: true, contract: newContract });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// DELETE contract
+app.delete('/api/contracts/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const contractsData = await getContractsFromFile();
+    
+    const contractIndex = contractsData.contracts.findIndex(c => c.contractId === id);
+    if (contractIndex === -1) {
+      return res.status(404).json({ success: false, error: 'Contract not found' });
+    }
+    
+    // Remove contract
+    contractsData.contracts.splice(contractIndex, 1);
+    await saveContractsToFile(contractsData);
+    
+    res.json({ success: true, message: 'Contract deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+
+
 
 app.post('/api/accounts', async (req, res) => {
     try {
@@ -419,6 +535,32 @@ app.post('/api/projects/:name/deploy', async (req, res) => {
       contractId: contractId,
       wasmFile: wasmFileName
     });
+    const contractsData = await getContractsFromFile();
+    const newContract = {
+      name,
+      contractId,
+      project: name,
+      ownerKey: source,
+      network,
+      createdAt: new Date().toISOString()
+    }
+
+        // Check if it already exists
+        const existingIndex = contractsData.contracts.findIndex(c => c.contractId === contractId);
+        if (existingIndex >= 0) {
+          contractsData.contracts[existingIndex] = newContract;
+        } else {
+          contractsData.contracts.push(newContract);
+        }
+        
+        await saveContractsToFile(contractsData);
+      
+        return { 
+          success: true, 
+          output: output, 
+          contractId: contractId,
+          wasmFile: wasmFileName
+        };
   } catch (error) {
     console.error('Deployment error:', error);
     res.status(500).json({ success: false, error: error.message });

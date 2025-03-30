@@ -1,13 +1,72 @@
-// ContractInteractionForm.jsx
-import { useState } from 'react';
+// src/components/blockchain/ContractInteractionForm.jsx
+import { useState, useEffect } from 'react';
 import { useBlockchain } from '../../contexts/BlockchainContext';
 
-const ContractInteractionForm = ({ contractId, contractAbi }) => {
+const ContractInteractionForm = ({ contractId, contractCode }) => {
   const { callContract, activeAccount, network, isLoading } = useBlockchain();
-  const [selectedFunction, setSelectedFunction] = useState(contractAbi.functions[0]);
+  const [contractAbi, setContractAbi] = useState(null);
+  const [selectedFunction, setSelectedFunction] = useState(null);
   const [paramValues, setParamValues] = useState({});
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  // Analyze contract code to generate ABI when component mounts
+  useEffect(() => {
+    if (contractCode) {
+      analyzeContractCode(contractCode);
+    }
+  }, [contractCode]);
+
+  // Analyze contract code with the AI agent
+  const analyzeContractCode = async (code) => {
+    setIsAnalyzing(true);
+    setError(null);
+    
+    try {
+      const response = await fetch('http://localhost:8000/ai', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          code
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Agent error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('AI Agent Response:', data);
+      
+      // Process the ABI from agent response
+      let abi = null;
+      if (data.abi) {
+        abi = data.abi;
+      } else if (data.agent_response) {
+        // Try to parse abi from agent_response if it's in JSON format
+        try {
+          abi = JSON.parse(data.agent_response);
+        } catch (e) {
+          console.error('Failed to parse ABI from agent_response:', e);
+        }
+      }
+      
+      if (abi && abi.functions && abi.functions.length > 0) {
+        setContractAbi(abi);
+        setSelectedFunction(abi.functions[0]);
+      } else {
+        throw new Error('No valid ABI found in agent response');
+      }
+    } catch (err) {
+      console.error('Error analyzing contract:', err);
+      setError(`Failed to analyze contract: ${err.message}`);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
 
   // Handle input change for a parameter
   const handleParamChange = (paramName, value) => {
@@ -15,29 +74,6 @@ const ContractInteractionForm = ({ contractId, contractAbi }) => {
       ...prev,
       [paramName]: value
     }));
-  };
-
-  // Convert input value to appropriate type for the Soroban network
-  const convertParamValue = (value, type) => {
-    if (!value) return null;
-    
-    switch (type) {
-      case 'i32':
-      case 'u32':
-      case 'i64':
-      case 'u64':
-      case 'i128':
-      case 'u128':
-        return BigInt(value);
-      case 'String':
-        return String(value);
-      case 'Address':
-        return value; // Address is passed as-is to be handled by Soroban SDK
-      case 'Bool':
-        return Boolean(value === 'true' || value === true);
-      default:
-        return value;
-    }
   };
 
   // Create appropriate input field based on parameter type
@@ -49,6 +85,7 @@ const ContractInteractionForm = ({ contractId, contractAbi }) => {
 
     switch (param.type) {
       case 'Bool':
+      case 'bool':
         return (
           <select
             value={paramValues[param.name] || ''}
@@ -76,6 +113,7 @@ const ContractInteractionForm = ({ contractId, contractAbi }) => {
           />
         );
       case 'Address':
+      case 'address':
         return (
           <input
             type="text"
@@ -100,8 +138,8 @@ const ContractInteractionForm = ({ contractId, contractAbi }) => {
 
   // Handle function call
   const handleCallFunction = async () => {
-    if (!activeAccount) {
-      setError('No active account selected');
+    if (!contractId) {
+      setError('No contract ID provided');
       return;
     }
 
@@ -113,7 +151,9 @@ const ContractInteractionForm = ({ contractId, contractAbi }) => {
       // Skip the 'env' parameter which is handled by Soroban runtime
       const args = selectedFunction.parameters
         .filter(param => param.name !== 'env' || param.type !== 'Env')
-        .map(param => convertParamValue(paramValues[param.name], param.type));
+        .map(param => paramValues[param.name]);
+      
+      console.log(`Calling contract ${contractId} function ${selectedFunction.name} with args:`, args);
       
       const response = await callContract(contractId, selectedFunction.name, args);
       
@@ -130,6 +170,35 @@ const ContractInteractionForm = ({ contractId, contractAbi }) => {
       });
     }
   };
+
+  if (isAnalyzing) {
+    return (
+      <div className="analyzing-container">
+        <div className="loading-spinner"></div>
+        <div className="analyzing-text">Analyzing contract code with AI...</div>
+      </div>
+    );
+  }
+
+  if (error && !contractAbi) {
+    return (
+      <div className="error-container">
+        <div className="error-icon">⚠️</div>
+        <div className="error-title">Error Analyzing Contract</div>
+        <div className="error-message">{error}</div>
+      </div>
+    );
+  }
+
+  if (!contractAbi || !selectedFunction) {
+    return (
+      <div className="empty-state">
+        <div className="empty-icon">📄</div>
+        <div className="empty-title">No Contract ABI Available</div>
+        <div className="empty-message">Unable to generate interface for this contract.</div>
+      </div>
+    );
+  }
 
   return (
     <div className="contract-interaction-form">
@@ -183,16 +252,10 @@ const ContractInteractionForm = ({ contractId, contractAbi }) => {
         <button
           className="call-button"
           onClick={handleCallFunction}
-          disabled={isLoading || !activeAccount}
+          disabled={isLoading}
         >
           {isLoading ? 'Calling...' : 'Call Function'}
         </button>
-        
-        {!activeAccount && (
-          <div className="warning">
-            You need to select an active account to call contract functions.
-          </div>
-        )}
       </div>
 
       {error && (
@@ -340,16 +403,6 @@ const ContractInteractionForm = ({ contractId, contractAbi }) => {
           cursor: not-allowed;
         }
         
-        .warning {
-          margin-top: 10px;
-          padding: 8px 12px;
-          background-color: rgba(255, 215, 64, 0.1);
-          border-left: 3px solid var(--warning);
-          color: var(--warning);
-          border-radius: 4px;
-          font-size: 14px;
-        }
-        
         .error-message {
           padding: 12px 16px;
           background-color: rgba(255, 82, 82, 0.1);
@@ -385,6 +438,55 @@ const ContractInteractionForm = ({ contractId, contractAbi }) => {
           line-height: 1.5;
           max-height: 300px;
           overflow-y: auto;
+        }
+        
+        .analyzing-container, .empty-state, .error-container {
+          padding: 40px 20px;
+          text-align: center;
+          background-color: var(--background-tertiary);
+          border-radius: var(--border-radius);
+          margin-top: 20px;
+        }
+        
+        .loading-spinner {
+          width: 40px;
+          height: 40px;
+          border: 3px solid rgba(255, 255, 255, 0.1);
+          border-radius: 50%;
+          border-top-color: var(--accent-primary);
+          animation: spin 1s ease-in-out infinite;
+          margin: 0 auto 16px;
+        }
+        
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+        
+        .analyzing-text, .empty-message {
+          color: var(--text-secondary);
+        }
+        
+        .empty-icon, .error-icon {
+          font-size: 48px;
+          margin-bottom: 16px;
+        }
+        
+        .empty-title, .error-title {
+          font-size: 20px;
+          margin-bottom: 8px;
+          font-weight: 500;
+        }
+        
+        .error-container {
+          background-color: rgba(255, 82, 82, 0.05);
+        }
+        
+        .error-icon {
+          color: var(--error);
+        }
+        
+        .error-title {
+          color: var(--error);
         }
       `}</style>
     </div>

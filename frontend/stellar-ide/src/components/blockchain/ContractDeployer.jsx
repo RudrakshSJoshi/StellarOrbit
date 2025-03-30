@@ -63,6 +63,7 @@ const ContractDeployer = ({ projectName }) => {
   // Handle project deployment
   // In src/components/blockchain/ContractDeployer.jsx
 
+// Handle project deployment
 const handleDeploy = async () => {
   if (!projectName) {
     setDeployError('No project selected');
@@ -90,49 +91,7 @@ const handleDeploy = async () => {
   setShowOutput(true);
   
   try {
-    // 1. Get the contract source code to analyze
-    const sourceResponse = await fetch(`http://localhost:5001/api/projects/${projectName}/files/src/lib.rs`);
-    const sourceData = await sourceResponse.json();
-    const contractSource = sourceData.content;
-    
-    // 2. Call the AI agent to analyze the contract source and generate ABI
-    // const aiResponse = await fetch('http://localhost:8000/ai', {
-    //   method: 'POST',
-    //   headers: {
-    //     'Content-Type': 'application/json'
-    //   },
-    //   body: JSON.stringify({
-    //     request_type: "contract_analysis",
-    //     user_code: contractSource,
-    //     context: "Generate ABI for Soroban contract"
-    //   })
-    // });
-    const aiResponse = `{
-      "functions": [
-        {
-          "name": "add",
-          "parameters": [
-            { "name": "a", "type": "i32" },
-            { "name": "b", "type": "i32" }
-          ],
-          "returns": "i32"
-        },
-        {
-          "name": "set_value",
-          "parameters": [
-            { "name": "key", "type": "u64" },
-            { "name": "value", "type": "String" }
-          ],
-          "returns": "void"
-        }
-      ]
-    }`;
-    
-    // 3. Extract the ABI from the AI response
-    const aiData = await aiResponse.json();
-    const contractAbi = aiData.agent_response || aiData.abi;
-    
-    // 4. Deploy the contract using the backend service
+    // Deploy the contract using the backend service
     const result = await deployProject(
       projectName,
       activeAccountName,
@@ -140,16 +99,6 @@ const handleDeploy = async () => {
     );
     
     if (result.success) {
-      // 5. Register the deployed contract with its ABI
-      await deployContract(
-        projectName,
-        null, // wasmBase64
-        null, // sourceHash
-        [],   // args
-        contractAbi,    // ABI from AI analysis
-        result.contractId // Real contract ID from deployment
-      );
-      
       setDeployOutput(result.output || 'Deployment successful!');
       
       if (result.contractId) {

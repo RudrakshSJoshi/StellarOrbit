@@ -91,6 +91,40 @@ export const BlockchainProvider = ({ children }) => {
     }
   };
   
+  // Fetch contract instances
+  const fetchContractInstances = async () => {
+    try {
+      // Try to fetch from API first
+      const response = await fetch(`${API_URL}/contracts`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        if (data.success && data.contracts) {
+          setContractInstances(data.contracts);
+          return data.contracts;
+        }
+      }
+      
+      // If API fails or no contracts, try loading from localStorage
+      const storedContracts = localStorage.getItem('stellarIDE_contracts');
+      if (storedContracts) {
+        try {
+          const contracts = JSON.parse(storedContracts);
+          setContractInstances(contracts);
+          return contracts;
+        } catch (err) {
+          console.error('Error parsing stored contracts:', err);
+        }
+      }
+      
+      return [];
+    } catch (error) {
+      console.error('Error fetching contract instances:', error);
+      return [];
+    }
+  };
+  
   // Connect to Stellar network
   const connectToNetwork = async () => {
     try {
@@ -320,7 +354,7 @@ export const BlockchainProvider = ({ children }) => {
   };
   
   // Deploy a contract
-  const deployContract = async (contractName, wasmBase64, sourceHash, args = [], contractAbi = null) => {
+  const deployContract = async (contractName, wasmBase64, sourceHash, args = []) => {
     if (!connected) {
       throw new Error('Not connected to network');
     }
@@ -342,9 +376,6 @@ export const BlockchainProvider = ({ children }) => {
         ownerKey: activeAccount,
         network,
         createdAt: new Date().toISOString(),
-        // Store the AI-generated ABI with the contract
-        abi: contractAbi,
-        // Keep the interface for backward compatibility
         interface: [
           {
             name: 'hello',
@@ -404,7 +435,8 @@ export const BlockchainProvider = ({ children }) => {
     fundAccountWithFriendbot,
     deployContract,
     callContract,
-    fetchAccounts
+    fetchAccounts,
+    fetchContractInstances
   };
   
   return (

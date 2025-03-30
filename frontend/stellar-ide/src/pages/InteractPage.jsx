@@ -1,14 +1,10 @@
-// ====================================================================
-// CREATE NEW FILE: src/pages/InteractPage.jsx
-// ====================================================================
-
+// src/pages/InteractPage.jsx
 import { useState } from 'react';
 import Header from '../components/layout/Header';
 import ContractList from '../components/blockchain/ContractList';
 import { useBlockchain } from '../contexts/BlockchainContext';
 
 const InteractPage = () => {
-  // Add any state or logic specific to interaction page
   const { isLoading, error } = useBlockchain();
   
   return (
