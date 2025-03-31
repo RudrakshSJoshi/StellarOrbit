@@ -1,5 +1,5 @@
 # Stellar Orbit  
-![Stellar Orbit Logo](data/logo.png) 
+![Stellar Orbit Logo](data/logo.png)  
 
 ### **An AI-Powered IDE for Stellar Blockchain Development**  
 
@@ -15,15 +15,11 @@ Built with the best of modern technologies:
 
 ---
 
-## ✨ **Core Features**  
+## ✨ **Core Features (Pre-Built)**  
 - **Compile & Deploy Contracts**: Easily compile and deploy Stellar smart contracts.  
 - **Address Creation**: Generate Stellar addresses in just a few clicks.  
 - **User-Friendly IDE**: Intuitive interface for seamless development.  
 - **No More CMD Hustle**: Say goodbye to complex command-line operations.  
-
----
-
-## 🤖 **AI-Powered Features**  
 - **Copilot Integration**: AI-assisted coding for faster and smarter development.  
 - **AI Debugger**: Automatically detect and fix errors in your code.  
 - **AI Code Generator**: Generate boilerplate code with AI assistance.  
@@ -32,7 +28,9 @@ Built with the best of modern technologies:
 
 ---
 
-## 🔮 **Future Scope**  
+## 🔥 **New Features (In Development)**  
+- **AI Code Analyzer**: Advanced function logic extraction to understand contract behavior.  
+- **Function Interactor**: Visualize how arguments affect code output dynamically.  
 - **Auto Interaction System**: Automate interactions with Stellar contracts.  
 - **Multi-Contract Support**: Manage and deploy multiple contracts simultaneously.  
 - **No-Code Contract Creation**: Create contracts using flowcharts and visual tools.  
@@ -40,9 +38,24 @@ Built with the best of modern technologies:
 
 ---
 
+Here's the refined **Project Background** section with your requested achievements highlighted:
+
+## 📜 **Project Background**  
+Stellar Orbit was born at the **Aleph Hackathon 2024**, where it achieved dual honors:  
+🏆 **Winner of the Stellar Track** - Recognized as the best project in blockchain development  
+🌟 **Top Overall Project** - Ranked among the hackathon's most innovative projects across all categories  
+
+Originally developed as a hackathon prototype that impressed judges with its seamless integration of AI and blockchain tooling, we're now evolving Stellar Orbit into a full-featured IDE with advanced capabilities like:  
+- AI-powered contract analysis  
+- Visual development tools  
+- Next-generation debugging systems  
+- Multi-contract support
+- Enhanced AI capabilities
+---
+
 ## 📂 **Resources**  
 - [Project Presentation (PPT)](https://www.canva.com/design/DAGjSenqao0/rsTES4WatGAvM6U3T6t4Sw/edit?utm_content=DAGjSenqao0&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton)  
-- [GitBook Documentation](https://stellar-orbit.gitbook.io/stellar_orbit)  
+ - [GitBook Documentation](https://stellar-orbit.gitbook.io/stellar_orbit) 
 
 ---
 
@@ -59,11 +72,21 @@ A big thanks to the amazing contributors who made this project possible:
 
 ---
 
-**Stellar Orbit** - Empowering developers to build the future of blockchain, effortlessly.
+**Stellar Orbit** - Empowering developers to build the future of blockchain, effortlessly.  
 
 ---
 
-## Architecture
+## 🏗️ **New Architecture**  
+```mermaid  
+flowchart TD  
+    subgraph "AI Services"  
+        AI_ANALYZER[Code Analyzer] -->|Extracts Logic| AI_FUNCTION[Function Interactor]  
+        AI_FUNCTION -->|Visualizes Output| UI_EDITOR[Code Editor]  
+    end  
+    %% Additional architecture details omitted for brevity  
+```  
+
+## Original Architecture Inclution:
 
 ```mermaid
 flowchart TD
@@ -114,7 +137,7 @@ flowchart TD
     %% Connections omitted for brevity
 ```
 
-## Project Structure
+## Original Project Structure
 
 ```mermaid
 graph TD
@@ -165,104 +188,17 @@ graph TD
     E --> E4[ThemeContext.jsx]
 ```
 
-## Getting Started
-
-### Clone this repository
-```sh
-git clone https://github.com/RudrakshSJoshi/AlephAI.git
-cd stellar-ide
-```
-
-### Install dependencies
-```sh
+## 🛠️ **Getting Started**  
+```sh  
+git clone https://github.com/RudrakshSJoshi/StellarOrbit.git  
+cd StellarOrbit  
 npm install
-```
+npm run dev  
+```  
 
-### Start the development server
-```sh
-npm run dev
-```
+---
 
-## Features
-- **Code Editor**: Write and manage smart contract code with syntax highlighting.
-- **Blockchain Interaction**: Deploy and interact with contracts on the Stellar blockchain.
-- **AI Assistant**: Get AI-powered suggestions for contract development.
-- **Terminal & Debugging Tools**: Built-in tools for seamless debugging and testing.
-- **Project Management**: Organize and manage multiple projects easily.
+**License**: MIT  
+**Status**: Actively Developed 🚧  
 
-## Contributing
-We welcome contributions! Please follow these steps:
-1. Fork the repository
-2. Create a new branch (`git checkout -b feature-branch`)
-3. Commit your changes (`git commit -m "Add new feature"`)
-4. Push to the branch (`git push origin feature-branch`)
-5. Open a Pull Request
-
-## License
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
-## Installation
-
-### 1. Install Rust
-#### macOS/Linux:
-```sh
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-rustup target add wasm32-unknown-unknown
-```
-
-### 2. Install Stellar CLI
-#### macOS:
-```sh
-brew install stellar-cli
-```
-
-### 3. Install Node.js Dependencies
-```sh
-npm install express
-```
-
-### 4. Run the Server
-```sh
-node server.js
-```
-
-## Agentic Backend in Python
-
-This is the Python-based agentic application backend designed to run as a web server using FastAPI and Uvicorn.
-
-### Prerequisites
-- Python 3.7 or higher
-- `pip` package manager
-
-### Setup Instructions
-
-#### 1. Create a Virtual Environment
-```bash
-python -m venv venv
-```
-
-#### 2. Activate the Virtual Environment
-**On Windows:**
-```bash
-venv\Scripts\activate
-```
-**On macOS/Linux:**
-```bash
-source venv/bin/activate
-```
-
-#### 3. Install Dependencies
-```bash
-pip install -r requirements.txt
-```
-
-#### 4. Start the Server
-```bash
-uvicorn main:app --reload --port 8000 --host 0.0.0.0
-```
-
-#### 5. Access the Application
-```
-http://localhost:8000
-```
-
+*Join us in building the ultimate Stellar development experience!* 🌟
