@@ -7,10 +7,11 @@
 
 ## 🚀 **Tech Stack**  
 Built with the best of modern technologies:  
-![Rust](https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white)  
-![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)  
-![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black)  
-![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)  
+
+[![Rust](https://skillicons.dev/icons?i=rust)](https://skillicons.dev) **Rust** 🦀  
+[![Python](https://skillicons.dev/icons?i=py)](https://skillicons.dev) **Python** 🐍  
+[![JavaScript](https://skillicons.dev/icons?i=js)](https://skillicons.dev) **JavaScript** ⚡  
+[![CSS](https://skillicons.dev/icons?i=css)](https://skillicons.dev) **CSS** 🎨  
 
 ---
 
