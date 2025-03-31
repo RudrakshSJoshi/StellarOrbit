@@ -28,7 +28,7 @@ Built with the best of modern technologies:
 
 ---
 
-## 🔥 **New Features (In Development)**  
+## 🔥 **New Features (Added in Version 2.0)**  
 - **AI Code Analyzer**: Advanced function logic extraction to understand contract behavior.  
 - **Function Interactor**: Visualize how arguments affect code output dynamically.  
 - **Auto Interaction System**: Automate interactions with Stellar contracts.  
@@ -42,26 +42,17 @@ Stellar Orbit was born at the **Aleph Hackathon 2024**, where it achieved dual h
 🏆 **Winner of the Stellar Track** - Recognized as the best project in blockchain development  
 🌟 **Top Overall Project** - Ranked among the hackathon's most innovative projects across all categories  
 
-Originally developed as a hackathon prototype that impressed judges with its seamless integration of AI and blockchain tooling, we're now evolving Stellar Orbit into a full-featured IDE.  
-
-**Looking Forward**:  
-We're actively seeking grant opportunities from the Stellar Development Foundation to accelerate development of:  
+Originally developed as a hackathon prototype that impressed judges with its seamless integration of AI and blockchain tooling, we're now evolving Stellar Orbit into a full-featured IDE, with all these new features in v2.0!
 - AI-powered contract analysis  
 - Visual development tools  
 - Next-generation debugging systems  
 - Multi-contract support  
 - Enhanced AI capabilities  
 
+**Looking Forward**:  
+We're actively seeking grant opportunities from the Stellar Development Foundation to accelerate development of StellarOrbit into a fully fledged and deployed IDE for smart contract development on Stellar.  
+
 Join us as we build on this award-winning foundation to revolutionize smart contract development on Stellar.  
-
----
-
-This addition:
-1. Preserves all your original content
-2. Adds the grant-seeking information in a professional way
-3. Maintains the positive, forward-looking tone
-4. Keeps the bullet points you wanted to highlight
-5. Positions it as a natural progression from the hackathon win
 
 ---
 
@@ -88,7 +79,7 @@ A big thanks to the amazing contributors who made this project possible:
 
 ---
 
-## 🏗️ **New Architecture**  
+## 🏗️ **New Added Architecture Implementation in v2.0**  
 ```mermaid  
 flowchart TD  
     subgraph "AI Services"  
@@ -200,13 +191,73 @@ graph TD
     E --> E4[ThemeContext.jsx]
 ```
 
-## 🛠️ **Getting Started**  
-```sh  
-git clone https://github.com/RudrakshSJoshi/StellarOrbit.git  
-cd StellarOrbit  
+---
+
+## 🛠️ **Installation Guide**
+
+### **System Requirements**
+- Node.js v18+
+- Python 3.9+
+- Rust 1.70+
+- npm 9+
+
+### **1. Frontend Setup (React)**
+```sh
+git clone https://github.com/RudrakshSJoshi/StellarOrbit.git
+cd StellarOrbit/frontend
 npm install
-npm run dev  
-```  
+npm run dev
+```
+Access at: `http://localhost:3000`
+
+### **2. Backend Setup (Rust)**
+```sh
+cd ../backend
+# Install Rust (if not installed)
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+rustup target add wasm32-unknown-unknown
+
+# Install dependencies and run
+cargo build
+cargo run
+```
+
+### **3. AI Agent Setup (Python)**
+```sh
+cd ../agent_backend
+python -m venv venv
+
+# Activate environment
+# Windows:
+venv\Scripts\activate
+# macOS/Linux:
+source venv/bin/activate
+
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
+```
+
+### **4. Stellar CLI Tools**
+```sh
+# macOS (using Homebrew)
+brew install stellar/stellar/stellar-core
+
+# Linux (manual build)
+git clone https://github.com/stellar/stellar-core.git
+cd stellar-core && ./autogen.sh && ./configure && make
+```
+
+### **Development Ports**
+- Frontend: `3000`
+- Rust Backend: `8080` 
+- Python AI Agent: `8000`
+- Stellar Testnet (if running locally): `8001`
+
+### **Environment Variables**
+Create `.env` files in agent_backend directory with:
+```
+GROQ_API_KEY=your_groq_api_key
+```
 
 ---
 
