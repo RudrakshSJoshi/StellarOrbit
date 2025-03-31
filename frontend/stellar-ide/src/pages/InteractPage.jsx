@@ -1,12 +1,64 @@
 // src/pages/InteractPage.jsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Header from '../components/layout/Header';
-import ContractList from '../components/blockchain/ContractList';
+import ContractInteractionPanel from '../components/blockchain/ContractInteractionPanel';
+import { useFileSystem } from '../contexts/FileSystemContext';
 import { useBlockchain } from '../contexts/BlockchainContext';
 
 const InteractPage = () => {
-  const { isLoading, error } = useBlockchain();
+  const { projects, activeProject, switchProject } = useFileSystem();
+  const { isLoading: blockchainLoading, error } = useBlockchain();
+  const [selectedProject, setSelectedProject] = useState(activeProject || '');
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Get URL parameters for direct contract interaction
+  const [directContractId, setDirectContractId] = useState(null);
+  const [directFunction, setDirectFunction] = useState(null);
   
+  useEffect(() => {
+    // Parse URL parameters
+    const searchParams = new URLSearchParams(window.location.search);
+    const contractParam = searchParams.get('contract');
+    const functionParam = searchParams.get('function');
+    
+    if (contractParam) {
+      setDirectContractId(contractParam);
+    }
+    
+    if (functionParam) {
+      setDirectFunction(functionParam);
+    }
+  }, []);
+
+  // Function to fetch projects
+  const fetchProjects = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('http://localhost:5001/api/projects');
+      const data = await response.json();
+
+      if (data.success && data.projects) {
+        // This is handled by the FileSystemContext,
+        // but we need to trigger a refresh
+        if (data.projects.length > 0 && !selectedProject) {
+          setSelectedProject(data.projects[0]);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Load projects when the component mounts
+  useEffect(() => {
+    if (activeProject) {
+      setSelectedProject(activeProject);
+    }
+    fetchProjects();
+  }, [activeProject]);
+
   return (
     <div className="interact-page">
       <Header />
@@ -21,7 +73,10 @@ const InteractPage = () => {
         )}
         
         <div className="interact-container">
-          <ContractList />
+          <ContractInteractionPanel 
+            directContractId={directContractId}
+            directFunction={directFunction}
+          />
         </div>
       </div>
       

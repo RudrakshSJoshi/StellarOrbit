@@ -98,6 +98,15 @@ const ContractList = () => {
                 {new Date(contract.createdAt).toLocaleDateString()}
               </div>
               <button className="interact-button">Interact</button>
+              <button 
+  className="invoke-button"
+  onClick={() => {
+    // Redirect to the interact page with this contract selected
+    window.location.href = `/interact?contract=${contractDetails.contractId}&function=${method.name}`;
+  }}
+>
+  Invoke
+</button>
             </div>
           ))}
         </div>

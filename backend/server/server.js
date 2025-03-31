@@ -26,7 +26,7 @@ if (!fsSync.existsSync(ACCOUNTS_FILE)) {
       accounts: []
     }));
   }
-  if (!fsSync.existsSync(CONTRACTS_FILE)) {
+if (!fsSync.existsSync(CONTRACTS_FILE)) {
     fsSync.writeFileSync(CONTRACTS_FILE, JSON.stringify({
       contracts: []
     }));
@@ -172,6 +172,143 @@ app.delete('/api/contracts/:id', async (req, res) => {
   }
 });
 
+// GET endpoint to retrieve a contract ID
+app.get('/api/projects/:name/contract-id', async (req, res) => {
+  try {
+    const { name } = req.params;
+    const projectDir = path.join(PROJECTS_DIR, name);
+    
+    if (!fsSync.existsSync(projectDir)) {
+      return res.status(404).json({ success: false, error: 'Project not found' });
+    }
+    
+    // Check if contract ID file exists
+    const contractIdFile = path.join(projectDir, '.stellar', 'contract-id.txt');
+    
+    if (!fsSync.existsSync(contractIdFile)) {
+      return res.status(404).json({ success: false, error: 'Contract ID not found' });
+    }
+    
+    // Read contract ID from file
+    const contractId = await fs.readFile(contractIdFile, 'utf8');
+    
+    res.json({ success: true, contractId });
+  } catch (error) {
+    console.error('Error getting contract ID:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Store a contract ID for a project
+app.post('/api/projects/:name/contract-id', async (req, res) => {
+  try {
+    const { name } = req.params;
+    const { contractId } = req.body;
+    
+    if (!contractId) {
+      return res.status(400).json({ success: false, error: 'Contract ID is required' });
+    }
+    
+    const projectDir = path.join(PROJECTS_DIR, name);
+    
+    if (!fsSync.existsSync(projectDir)) {
+      return res.status(404).json({ success: false, error: 'Project not found' });
+    }
+    
+    // Create .stellar directory if it doesn't exist
+    const stellarDir = path.join(projectDir, '.stellar');
+    if (!fsSync.existsSync(stellarDir)) {
+      await fs.mkdir(stellarDir, { recursive: true });
+    }
+    
+    // Save contract ID to a file
+    const contractIdFile = path.join(stellarDir, 'contract-id.txt');
+    await fs.writeFile(contractIdFile, contractId);
+    
+    res.json({ success: true, message: 'Contract ID saved successfully' });
+  } catch (error) {
+    console.error('Error saving contract ID:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Invoke a contract function
+app.post('/api/contracts/invoke', async (req, res) => {
+  try {
+    const { contractId, function: functionName, args, source, network } = req.body;
+    
+    if (!contractId || !functionName || !source) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Contract ID, function name, and source account are required' 
+      });
+    }
+    
+    // Construct arguments string
+    const argsString = args.map(arg => {
+      if (typeof arg === 'string') {
+        return `--${arg.includes(' ') ? `"${arg}"` : arg}`;
+      } else if (arg === null || arg === undefined) {
+        return '';
+      } else {
+        return `--${arg}`;
+      }
+    }).join(' ');
+    
+    // Construct and execute the stellar command
+    const command = `stellar contract invoke --id ${contractId} --source ${source} --network ${network || 'testnet'} -- ${functionName} ${argsString}`;
+    
+    console.log(`Executing command: ${command}`);
+    
+    const { stdout, stderr } = await execAsync(command);
+    
+    if (stderr && stderr.includes('error')) {
+      throw new Error(stderr);
+    }
+    
+    // Parse the result from stdout
+    let result;
+    
+    // Check for errors in stdout that might not be caught in stderr
+    if (stdout.includes('Error:') || stdout.includes('error:')) {
+      const errorMatch = stdout.match(/[Ee]rror:?\s*(.*)/);
+      const errorMessage = errorMatch ? errorMatch[1].trim() : 'Unknown error occurred during contract execution';
+      throw new Error(errorMessage);
+    }
+    
+    // Try to find a JSON result in the output
+    const jsonMatch = stdout.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      try {
+        result = JSON.parse(jsonMatch[0]);
+      } catch {
+        result = stdout.trim();
+      }
+    } else {
+      // Extract result line if present
+      const resultLine = stdout.split('\n').find(line => line.includes('Result:'));
+      if (resultLine) {
+        result = resultLine.replace('Result:', '').trim();
+        
+        // Try to convert numeric results
+        if (!isNaN(result)) {
+          result = Number(result);
+        }
+      } else {
+        result = stdout.trim();
+      }
+    }
+    
+    res.json({ 
+      success: true, 
+      result, 
+      output: stdout 
+    });
+  } catch (error) {
+    console.error('Error invoking contract function:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 
 
@@ -489,6 +626,185 @@ app.post('/api/projects/:name/compile', async (req, res) => {
 });
 
 // Deploy the contract - Updated with better WASM file detection
+// app.post('/api/projects/:name/deploy', async (req, res) => {
+//   try {
+//     const { name } = req.params;
+//     const { source, network } = req.body;
+
+//     const projectDir = path.join(PROJECTS_DIR, name);
+//     const wasmDir = path.join(projectDir, 'target', 'wasm32-unknown-unknown', 'release');
+
+//     // Check if the directory exists
+//     if (!fsSync.existsSync(wasmDir)) {
+//       return res.status(400).json({ 
+//         success: false, 
+//         error: 'WASM directory not found. Compile the contract first.' 
+//       });
+//     }
+
+//     // Get all WASM files in the directory
+//     const wasmFiles = fsSync.readdirSync(wasmDir).filter(file => file.endsWith('.wasm'));
+    
+//     if (wasmFiles.length === 0) {
+//       return res.status(400).json({ 
+//         success: false, 
+//         error: 'No WASM files found. Compile the contract first.' 
+//       });
+//     }
+
+//     // Use the first WASM file found
+//     const wasmFileName = wasmFiles[0];
+//     const wasmPath = path.join(wasmDir, wasmFileName);
+//     console.log(`Using WASM file for deployment: ${wasmPath}`);
+
+//     const deployResult = await execAsync(
+//       `stellar contract deploy --wasm ${wasmPath} --source ${source} --network ${network} --alias ${name}`,
+//       { cwd: projectDir }
+//     );
+
+//     const output = deployResult.stdout;
+//     const contractIdMatch = output.match(/Contract ID: ([A-Z0-9]+)/);
+//     const contractId = contractIdMatch ? contractIdMatch[1] : null;
+
+//     res.json({ 
+//       success: true, 
+//       output: output, 
+//       contractId: contractId,
+//       wasmFile: wasmFileName
+//     });
+//     const contractsData = await getContractsFromFile();
+//     const newContract = {
+//       name,
+//       contractId,
+//       project: name,
+//       ownerKey: source,
+//       network,
+//       createdAt: new Date().toISOString()
+//     }
+
+//         // Check if it already exists
+//         const existingIndex = contractsData.contracts.findIndex(c => c.contractId === contractId);
+//         if (existingIndex >= 0) {
+//           contractsData.contracts[existingIndex] = newContract;
+//         } else {
+//           contractsData.contracts.push(newContract);
+//         }
+        
+//         await saveContractsToFile(contractsData);
+      
+//         return { 
+//           success: true, 
+//           output: output, 
+//           contractId: contractId,
+//           wasmFile: wasmFileName
+//         };
+//   } catch (error) {
+//     console.error('Deployment error:', error);
+//     res.status(500).json({ success: false, error: error.message });
+//   }
+// });
+// Deploy the contract - Updated with better WASM file detection and contract ID storage
+// app.post('/api/projects/:name/deploy', async (req, res) => {
+//   try {
+//     const { name } = req.params;
+//     const { source, network } = req.body;
+
+//     const projectDir = path.join(PROJECTS_DIR, name);
+//     const wasmDir = path.join(projectDir, 'target', 'wasm32-unknown-unknown', 'release');
+
+//     // Check if the directory exists
+//     if (!fsSync.existsSync(wasmDir)) {
+//       return res.status(400).json({ 
+//         success: false, 
+//         error: 'WASM directory not found. Compile the contract first.' 
+//       });
+//     }
+
+//     // Get all WASM files in the directory
+//     const wasmFiles = fsSync.readdirSync(wasmDir).filter(file => file.endsWith('.wasm'));
+    
+//     if (wasmFiles.length === 0) {
+//       return res.status(400).json({ 
+//         success: false, 
+//         error: 'No WASM files found. Compile the contract first.' 
+//       });
+//     }
+
+//     // Use the first WASM file found
+//     const wasmFileName = wasmFiles[0];
+//     const wasmPath = path.join(wasmDir, wasmFileName);
+//     console.log(`Using WASM file for deployment: ${wasmPath}`);
+
+//     const deployResult = await execAsync(
+//       `stellar contract deploy --wasm ${wasmPath} --source ${source} --network ${network} --alias ${name}`,
+//       { cwd: projectDir }
+//     );
+
+//     const output = deployResult.stdout;
+//     console.log('Deployment output:', output);
+    
+//     const contractIdMatch = output.match(/Contract ID: ([A-Z0-9]+)/);
+//     const contractId = contractIdMatch ? contractIdMatch[1] : null;
+    
+//     if (!contractId) {
+//       console.error('Failed to extract contract ID from deployment output');
+//       return res.status(500).json({ 
+//         success: false, 
+//         error: 'Failed to extract contract ID from deployment output', 
+//         output: output 
+//       });
+//     }
+    
+//     console.log(`Extracted contract ID: ${contractId}`);
+
+//     // Create .stellar directory if it doesn't exist
+//     const stellarDir = path.join(projectDir, '.stellar');
+//     if (!fsSync.existsSync(stellarDir)) {
+//       await fs.mkdir(stellarDir, { recursive: true });
+//       console.log(`Created .stellar directory at ${stellarDir}`);
+//     }
+
+//     // Save contract ID to a file
+//     const contractIdFile = path.join(stellarDir, 'contract-id.txt');
+//     await fs.writeFile(contractIdFile, contractId);
+//     console.log(`Saved contract ID to ${contractIdFile}`);
+
+//     // Store contract in the contracts list
+//     const contractsData = await getContractsFromFile();
+//     const newContract = {
+//       name,
+//       contractId,
+//       project: name,
+//       ownerKey: source,
+//       network,
+//       createdAt: new Date().toISOString()
+//     };
+
+//     // Check if it already exists
+//     const existingIndex = contractsData.contracts.findIndex(c => c.contractId === contractId);
+//     if (existingIndex >= 0) {
+//       contractsData.contracts[existingIndex] = newContract;
+//     } else {
+//       contractsData.contracts.push(newContract);
+//     }
+    
+//     await saveContractsToFile(contractsData);
+//     console.log(`Added/updated contract in contracts registry`);
+    
+//     // Return success response
+//     res.json({ 
+//       success: true, 
+//       output: output, 
+//       contractId: contractId,
+//       wasmFile: wasmFileName
+//     });
+//   } catch (error) {
+//     console.error('Deployment error:', error);
+//     res.status(500).json({ success: false, error: error.message });
+//   }
+// });
+// Deploy the contract - Updated with better WASM file detection and contract ID storage
+// Deploy the contract - Updated with better WASM file detection and contract ID storage
 app.post('/api/projects/:name/deploy', async (req, res) => {
   try {
     const { name } = req.params;
@@ -526,15 +842,57 @@ app.post('/api/projects/:name/deploy', async (req, res) => {
     );
 
     const output = deployResult.stdout;
-    const contractIdMatch = output.match(/Contract ID: ([A-Z0-9]+)/);
-    const contractId = contractIdMatch ? contractIdMatch[1] : null;
+    console.log('Deployment output:', output);
+    
+    // Try to extract the contract ID using the expected format
+    let contractIdMatch = output.match(/Contract ID: ([A-Z0-9]+)/);
+    let contractId = contractIdMatch ? contractIdMatch[1] : null;
+    
+    // If the standard format didn't work, check if the output is just the contract ID
+    if (!contractId) {
+      // Check if the output is a 56-character alphanumeric string (typical Soroban contract ID format)
+      const cleanOutput = output.trim();
+      if (/^[A-Z0-9]{56}$/.test(cleanOutput)) {
+        contractId = cleanOutput;
+        console.log('Found contract ID directly in output');
+      }
+    }
+    
+    if (!contractId) {
+      console.error('Failed to extract contract ID from deployment output');
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Failed to extract contract ID from deployment output', 
+        output: output 
+      });
+    }
+    
+    console.log(`Extracted contract ID: ${contractId}`);
 
-    res.json({ 
-      success: true, 
-      output: output, 
+    // Create .stellar directory if it doesn't exist
+    const stellarDir = path.join(projectDir, '.stellar');
+    if (!fsSync.existsSync(stellarDir)) {
+      await fs.mkdir(stellarDir, { recursive: true });
+      console.log(`Created .stellar directory at ${stellarDir}`);
+    }
+
+    // Save contract ID to a file in .stellar directory
+    const contractIdFile = path.join(stellarDir, 'contract-id.txt');
+    await fs.writeFile(contractIdFile, contractId);
+    console.log(`Saved contract ID to ${contractIdFile}`);
+    
+    // Also save contract ID to json file in root project directory for seamless API access
+    const rootContractIdFile = path.join(projectDir, 'contractid.json');
+    const contractIdData = { 
       contractId: contractId,
-      wasmFile: wasmFileName
-    });
+      network: network,
+      deployedAt: new Date().toISOString(),
+      source: source
+    };
+    await fs.writeFile(rootContractIdFile, JSON.stringify(contractIdData, null, 2));
+    console.log(`Saved contract ID json to ${rootContractIdFile}`);
+
+    // Store contract in the contracts list
     const contractsData = await getContractsFromFile();
     const newContract = {
       name,
@@ -543,24 +901,26 @@ app.post('/api/projects/:name/deploy', async (req, res) => {
       ownerKey: source,
       network,
       createdAt: new Date().toISOString()
-    }
+    };
 
-        // Check if it already exists
-        const existingIndex = contractsData.contracts.findIndex(c => c.contractId === contractId);
-        if (existingIndex >= 0) {
-          contractsData.contracts[existingIndex] = newContract;
-        } else {
-          contractsData.contracts.push(newContract);
-        }
-        
-        await saveContractsToFile(contractsData);
-      
-        return { 
-          success: true, 
-          output: output, 
-          contractId: contractId,
-          wasmFile: wasmFileName
-        };
+    // Check if it already exists
+    const existingIndex = contractsData.contracts.findIndex(c => c.contractId === contractId);
+    if (existingIndex >= 0) {
+      contractsData.contracts[existingIndex] = newContract;
+    } else {
+      contractsData.contracts.push(newContract);
+    }
+    
+    await saveContractsToFile(contractsData);
+    console.log(`Added/updated contract in contracts registry`);
+    
+    // Return success response
+    res.json({ 
+      success: true, 
+      output: output, 
+      contractId: contractId,
+      wasmFile: wasmFileName
+    });
   } catch (error) {
     console.error('Deployment error:', error);
     res.status(500).json({ success: false, error: error.message });

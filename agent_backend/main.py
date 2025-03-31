@@ -27,6 +27,7 @@ class AIRequest(BaseModel):
 @app.post("/ai")
 async def async_endpoint(request: AIRequest):
     result = await query_handler(request.request_type, request.user_code, request.context)
+    print(result)
     return result
 
 class FunCode(BaseModel):

@@ -1,7 +1,4 @@
-// ====================================================================
-// CREATE NEW FILE: src/components/blockchain/ContractDeployer.jsx
-// ====================================================================
-
+// src/components/blockchain/ContractDeployer.jsx
 import { useState, useEffect } from 'react';
 import { useBlockchain } from '../../contexts/BlockchainContext';
 import { compileProject, deployProject } from '../../services/ApiService';
@@ -61,59 +58,75 @@ const ContractDeployer = ({ projectName }) => {
   };
   
   // Handle project deployment
-  // In src/components/blockchain/ContractDeployer.jsx
-
-// Handle project deployment
-const handleDeploy = async () => {
-  if (!projectName) {
-    setDeployError('No project selected');
-    return;
-  }
-  
-  if (!activeAccountName) {
-    setDeployError('No active account selected');
-    return;
-  }
-  
-  if (!compileOutput) {
-    const confirmCompile = window.confirm('Project needs to be compiled first. Compile now?');
-    if (confirmCompile) {
-      await handleCompile();
-    } else {
+  const handleDeploy = async () => {
+    if (!projectName) {
+      setDeployError('No project selected');
       return;
     }
-  }
-  
-  setIsDeploying(true);
-  setDeployError(null);
-  setDeployOutput(null);
-  setContractId(null);
-  setShowOutput(true);
-  
-  try {
-    // Deploy the contract using the backend service
-    const result = await deployProject(
-      projectName,
-      activeAccountName,
-      network || 'testnet'
-    );
     
-    if (result.success) {
-      setDeployOutput(result.output || 'Deployment successful!');
-      
-      if (result.contractId) {
-        setContractId(result.contractId);
-      }
-    } else {
-      setDeployError(result.error || 'Deployment failed');
+    if (!activeAccountName) {
+      setDeployError('No active account selected');
+      return;
     }
-  } catch (error) {
-    console.error('Error deploying:', error);
-    setDeployError(error.message || 'Deployment failed');
-  } finally {
-    setIsDeploying(false);
-  }
-};
+    
+    if (!compileOutput) {
+      const confirmCompile = window.confirm('Project needs to be compiled first. Compile now?');
+      if (confirmCompile) {
+        await handleCompile();
+      } else {
+        return;
+      }
+    }
+    
+    setIsDeploying(true);
+    setDeployError(null);
+    setDeployOutput(null);
+    setContractId(null);
+    setShowOutput(true);
+    
+    try {
+      const result = await deployProject(
+        projectName,
+        activeAccountName,
+        network || 'testnet'
+      );
+      
+      if (result.success) {
+        setDeployOutput(result.output || 'Deployment successful!');
+        
+        if (result.contractId) {
+          setContractId(result.contractId);
+          
+          // Save the contract ID to the project
+          try {
+            const response = await fetch(`http://localhost:5001/api/projects/${projectName}/contract-id`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ contractId: result.contractId })
+            });
+            
+            const saveData = await response.json();
+            if (!saveData.success) {
+              console.error('Failed to save contract ID:', saveData.error);
+            } else {
+              console.log('Contract ID saved successfully:', result.contractId);
+            }
+          } catch (saveError) {
+            console.error('Error saving contract ID:', saveError);
+          }
+        }
+      } else {
+        setDeployError(result.error || 'Deployment failed');
+      }
+    } catch (error) {
+      console.error('Error deploying:', error);
+      setDeployError(error.message || 'Deployment failed');
+    } finally {
+      setIsDeploying(false);
+    }
+  };
   
   // Clear outputs
   const clearOutputs = () => {
