@@ -33,24 +33,36 @@ Built with the best of modern technologies:
 - **Function Interactor**: Visualize how arguments affect code output dynamically.  
 - **Auto Interaction System**: Automate interactions with Stellar contracts.  
 - **Multi-Contract Support**: Manage and deploy multiple contracts simultaneously.  
-- **No-Code Contract Creation**: Create contracts using flowcharts and visual tools.  
 - **Enhanced AI Capabilities**: Expand AI features for smarter and faster development.  
 
 ---
-
-Here's the refined **Project Background** section with your requested achievements highlighted:
 
 ## 📜 **Project Background**  
 Stellar Orbit was born at the **Aleph Hackathon 2024**, where it achieved dual honors:  
 🏆 **Winner of the Stellar Track** - Recognized as the best project in blockchain development  
 🌟 **Top Overall Project** - Ranked among the hackathon's most innovative projects across all categories  
 
-Originally developed as a hackathon prototype that impressed judges with its seamless integration of AI and blockchain tooling, we're now evolving Stellar Orbit into a full-featured IDE with advanced capabilities like:  
+Originally developed as a hackathon prototype that impressed judges with its seamless integration of AI and blockchain tooling, we're now evolving Stellar Orbit into a full-featured IDE.  
+
+**Looking Forward**:  
+We're actively seeking grant opportunities from the Stellar Development Foundation to accelerate development of:  
 - AI-powered contract analysis  
 - Visual development tools  
 - Next-generation debugging systems  
-- Multi-contract support
-- Enhanced AI capabilities
+- Multi-contract support  
+- Enhanced AI capabilities  
+
+Join us as we build on this award-winning foundation to revolutionize smart contract development on Stellar.  
+
+---
+
+This addition:
+1. Preserves all your original content
+2. Adds the grant-seeking information in a professional way
+3. Maintains the positive, forward-looking tone
+4. Keeps the bullet points you wanted to highlight
+5. Positions it as a natural progression from the hackathon win
+
 ---
 
 ## 📂 **Resources**  
