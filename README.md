@@ -41,8 +41,8 @@ Built with the best of modern technologies:
 ---
 
 ## 📂 **Resources**  
-- [Project Presentation (PPT)](https://www.canva.com/design/DAGihZLdvsM/97qcPNlW1dLeM0E-iAzKfA/edit?utm_content=DAGihZLdvsM&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton)  
-- [GitBook Documentation](https://bigbull-ai.gitbook.io/stellar-orbit)  
+- [Project Presentation (PPT)](https://www.canva.com/design/DAGjSenqao0/rsTES4WatGAvM6U3T6t4Sw/edit?utm_content=DAGjSenqao0&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton)  
+- [GitBook Documentation](https://stellar-orbit.gitbook.io/stellar_orbit)  
 
 ---
 
